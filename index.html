@@ -3,633 +3,142 @@
 <head>
   <meta http-equiv="X-Frame-Options" content="ALLOWALL">
   <meta http-equiv="Content-Security-Policy" content="frame-ancestors *">
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>フレーズ蒐集帖</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>フレーズ蒐集帖</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700;800&family=Noto+Serif+JP:wght@300;400;500;700&display=swap');
-
   :root {
-    --ink: #1a1209;
-    --paper: #f5f0e8;
-    --aged: #e8dfc8;
-    --sepia: #8b6914;
-    --sepia-light: #c4983a;
-    --sepia-dark: #5c4408;
-    --red: #8b1a1a;
-    --green: #1a5c1a;
-    --blue: #1a1a8b;
-    --shadow: rgba(26,18,9,0.15);
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: 'Noto Serif JP', 'Shippori Mincho', serif;
-    background: var(--paper);
-    color: var(--ink);
-    min-height: 100vh;
-    background-image:
-      repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(139,105,20,0.08) 31px, rgba(139,105,20,0.08) 32px);
-  }
-
-  /* API Key Screen */
-  #apiScreen {
-    position: fixed; inset: 0; z-index: 1000;
-    background: var(--paper);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    padding: 2rem;
-    background-image:
-      repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(139,105,20,0.08) 31px, rgba(139,105,20,0.08) 32px);
-  }
-
-  #apiScreen .book-icon {
-    font-size: 4rem; margin-bottom: 1rem;
-    animation: float 3s ease-in-out infinite;
-  }
-
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
-  }
-
-  #apiScreen h1 {
-    font-family: 'Shippori Mincho', serif;
-    font-size: 1.8rem; font-weight: 700;
-    color: var(--sepia-dark);
-    margin-bottom: 0.5rem; text-align: center;
-  }
-
-  #apiScreen p {
-    font-size: 0.85rem; color: var(--sepia);
-    text-align: center; margin-bottom: 2rem;
-    line-height: 1.8;
-  }
-
-  .api-input-wrap {
-    width: 100%; max-width: 400px;
-    background: white;
-    border: 2px solid var(--sepia-light);
-    border-radius: 8px;
-    padding: 1.5rem;
-    box-shadow: 4px 4px 0 var(--aged);
-  }
-
-  .api-input-wrap label {
-    display: block; font-size: 0.8rem;
-    color: var(--sepia); margin-bottom: 0.5rem;
-    font-weight: 600; letter-spacing: 0.05em;
-  }
-
-  .api-input-wrap input {
-    width: 100%; padding: 0.7rem;
-    border: 1px solid var(--aged);
-    border-radius: 4px; font-size: 0.85rem;
-    font-family: monospace;
-    background: var(--paper);
-    color: var(--ink); margin-bottom: 1rem;
-  }
-
-  .api-input-wrap input:focus {
-    outline: none; border-color: var(--sepia-light);
-  }
-
-  .btn-primary {
-    width: 100%; padding: 0.8rem;
-    background: var(--sepia-dark);
-    color: var(--paper); border: none;
-    border-radius: 4px; font-size: 0.9rem;
-    font-family: 'Noto Serif JP', serif;
-    cursor: pointer; transition: all 0.2s;
-    font-weight: 600; letter-spacing: 0.1em;
-  }
-
-  .btn-primary:hover { background: var(--sepia); }
-
-  .api-hint {
-    font-size: 0.75rem; color: var(--sepia);
-    text-align: center; margin-top: 1rem;
-    line-height: 1.7;
-  }
-
-  .api-hint a { color: var(--sepia-dark); }
-
-  /* Main App */
-  #app { display: none; min-height: 100vh; }
-
-  header {
-    background: var(--sepia-dark);
-    color: var(--paper);
-    padding: 1rem 1.2rem;
-    display: flex; align-items: center;
-    justify-content: space-between;
-    position: sticky; top: 0; z-index: 100;
-    box-shadow: 0 2px 8px var(--shadow);
-  }
-
-  header h1 {
-    font-family: 'Shippori Mincho', serif;
-    font-size: 1.2rem; font-weight: 700;
-    letter-spacing: 0.15em;
-  }
-
-  header .header-actions {
-    display: flex; gap: 0.5rem; align-items: center;
-  }
-
-  .icon-btn {
-    background: rgba(245,240,232,0.15);
-    border: 1px solid rgba(245,240,232,0.3);
-    color: var(--paper); padding: 0.4rem 0.7rem;
-    border-radius: 4px; font-size: 0.85rem;
-    cursor: pointer; transition: all 0.2s;
-    font-family: 'Noto Serif JP', serif;
-  }
-
-  .icon-btn:hover { background: rgba(245,240,232,0.25); }
-
-  /* Category Tabs */
-  .cat-tabs {
-    display: flex; overflow-x: auto;
-    background: var(--aged);
-    border-bottom: 2px solid var(--sepia-light);
-    padding: 0 0.5rem;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-
-  .cat-tabs::-webkit-scrollbar { display: none; }
-
-  .cat-tab {
-    padding: 0.7rem 1rem; white-space: nowrap;
-    font-size: 0.8rem; cursor: pointer;
-    border-bottom: 3px solid transparent;
-    color: var(--sepia); transition: all 0.2s;
-    font-family: 'Noto Serif JP', serif;
-    font-weight: 500;
-    flex-shrink: 0;
-  }
-
-  .cat-tab.active {
-    color: var(--sepia-dark);
-    border-bottom-color: var(--sepia-dark);
-    font-weight: 700;
-  }
-
-  .filter-tabs-wrap {
-    display: flex; align-items: center;
-    background: white;
-    border-bottom: 1px solid var(--aged);
-    padding: 0.2rem 0.5rem;
-    min-height: 36px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-
-  .filter-tabs-wrap::-webkit-scrollbar { display: none; }
-
-  .filter-label {
-    font-size: 0.68rem; color: var(--sepia);
-    white-space: nowrap; padding-right: 0.4rem;
-    font-weight: 700; flex-shrink: 0;
-    letter-spacing: 0.03em;
-  }
-
-  .filter-chip {
-    padding: 0.25rem 0.65rem; white-space: nowrap;
-    font-size: 0.72rem; cursor: pointer;
-    color: var(--sepia); transition: all 0.15s;
-    font-family: 'Noto Serif JP', serif;
-    font-weight: 500; flex-shrink: 0;
-    border-radius: 12px; margin: 0.1rem;
-    border: 1px solid var(--aged);
-    background: var(--paper);
-  }
-
-  .filter-chip.active {
-    background: var(--sepia-dark);
-    color: var(--paper);
-    border-color: var(--sepia-dark);
-    font-weight: 700;
-  }
-
-  /* Search */
-  .search-bar {
-    padding: 0.8rem 1rem;
-    background: white;
-    border-bottom: 1px solid var(--aged);
-  }
-
-  .search-bar input {
-    width: 100%; padding: 0.6rem 0.8rem;
-    border: 1px solid var(--aged);
-    border-radius: 20px; font-size: 0.85rem;
-    font-family: 'Noto Serif JP', serif;
-    background: var(--paper); color: var(--ink);
-  }
-
-  .search-bar input:focus {
-    outline: none; border-color: var(--sepia-light);
-  }
-
-  /* Phrase Cards */
-  .cards-container {
-    padding: 1rem;
-    display: flex; flex-direction: column; gap: 0.8rem;
-  }
-
-  .phrase-card {
-    background: white;
-    border: 1px solid var(--aged);
-    border-radius: 6px;
-    padding: 1rem;
-    box-shadow: 2px 2px 6px var(--shadow);
-    position: relative;
-    animation: fadeIn 0.3s ease;
-    border-left: 4px solid var(--sepia-light);
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .phrase-card .phrase-text {
-    font-family: 'Shippori Mincho', serif;
-    font-size: 0.95rem; line-height: 1.9;
-    color: var(--ink); margin-bottom: 0.6rem;
-    font-weight: 500;
-  }
-
-  .phrase-card .phrase-meta {
-    font-size: 0.75rem; color: var(--sepia);
-    display: flex; gap: 0.5rem;
-    flex-wrap: wrap; align-items: center;
-    margin-bottom: 0.4rem;
-  }
-
-  .phrase-card .phrase-source {
-    font-style: italic;
-  }
-
-  .phrase-card .phrase-tags {
-    display: flex; gap: 0.3rem; flex-wrap: wrap;
-  }
-
-  .tag {
-    background: var(--aged); color: var(--sepia-dark);
-    padding: 0.15rem 0.5rem; border-radius: 10px;
-    font-size: 0.7rem; font-weight: 600;
-  }
-
-  .stars { color: #c4983a; font-size: 0.85rem; }
-
-  .card-actions {
-    position: absolute; top: 0.7rem; right: 0.7rem;
-    display: flex; gap: 0.3rem;
-  }
-
-  .card-btn {
-    background: none; border: none;
-    font-size: 1rem; cursor: pointer;
-    padding: 0.2rem; opacity: 0.5;
-    transition: opacity 0.2s;
-  }
-
-  .card-btn:hover { opacity: 1; }
-
-  .phrase-memo {
-    font-size: 0.78rem; color: var(--sepia);
-    margin-top: 0.4rem; font-style: italic;
-    line-height: 1.6;
-    padding-top: 0.4rem;
-    border-top: 1px dashed var(--aged);
-  }
-
-  .cat-badge {
-    background: var(--sepia-dark); color: var(--paper);
-    padding: 0.1rem 0.5rem; border-radius: 10px;
-    font-size: 0.68rem; font-weight: 600;
-  }
-
-  /* Empty state */
-  .empty-state {
-    text-align: center; padding: 3rem 1rem;
-    color: var(--sepia); opacity: 0.7;
-  }
-
-  .empty-state .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
-  .empty-state p { font-size: 0.9rem; line-height: 1.8; }
-
-  /* FAB */
-  .fab-group {
-    position: fixed; bottom: 1.5rem; right: 1.5rem;
-    display: flex; flex-direction: column;
-    align-items: flex-end; gap: 0.6rem; z-index: 200;
-  }
-
-  .fab {
-    width: 56px; height: 56px; border-radius: 50%;
-    border: none; cursor: pointer;
-    font-size: 1.4rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s;
-  }
-
-  .fab-main {
-    background: var(--sepia-dark); color: var(--paper);
-  }
-
-  .fab-sub {
-    background: white; color: var(--sepia-dark);
-    width: 48px; height: 48px;
-    font-size: 1.2rem;
-    border: 2px solid var(--sepia-light);
-    display: none;
-  }
-
-  .fab-sub.show { display: flex; }
-  .fab:hover { transform: scale(1.05); }
-
-  .fab-label {
-    font-size: 0.7rem; color: var(--sepia-dark);
-    background: white; padding: 0.2rem 0.5rem;
-    border-radius: 10px;
-    border: 1px solid var(--sepia-light);
-    font-family: 'Noto Serif JP', serif;
-    display: none;
-    white-space: nowrap;
-  }
-
-  .fab-row { display: flex; align-items: center; gap: 0.5rem; }
-  .fab-row .fab-label { display: none; }
-  .fab-row.show .fab-label { display: block; }
-  .fab-row.show .fab-sub { display: flex; }
-
-  /* Modal */
-  .modal-overlay {
-    position: fixed; inset: 0; z-index: 500;
-    background: rgba(26,18,9,0.6);
-    display: flex; align-items: flex-end;
-    animation: overlayIn 0.2s ease;
-  }
-
-  @keyframes overlayIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  .modal {
-    background: var(--paper);
-    width: 100%; max-height: 92vh;
-    border-radius: 16px 16px 0 0;
-    overflow-y: auto;
-    padding: 1.5rem 1.2rem;
-    animation: slideUp 0.3s ease;
-    background-image:
-      repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(139,105,20,0.06) 31px, rgba(139,105,20,0.06) 32px);
-  }
-
-  @keyframes slideUp {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
-  }
-
-  .modal h2 {
-    font-family: 'Shippori Mincho', serif;
-    font-size: 1.2rem; color: var(--sepia-dark);
-    margin-bottom: 1.2rem; text-align: center;
-    letter-spacing: 0.15em;
-  }
-
-  .form-group {
-    margin-bottom: 1rem;
-  }
-
-  .form-group label {
-    display: block; font-size: 0.78rem;
-    color: var(--sepia); margin-bottom: 0.4rem;
-    font-weight: 600; letter-spacing: 0.05em;
-  }
-
-  .form-group textarea,
-  .form-group input,
-  .form-group select {
-    width: 100%; padding: 0.7rem;
-    border: 1px solid var(--aged);
-    border-radius: 4px; font-size: 0.9rem;
-    font-family: 'Noto Serif JP', serif;
-    background: white; color: var(--ink);
-    resize: vertical;
-  }
-
-  .form-group textarea:focus,
-  .form-group input:focus,
-  .form-group select:focus {
-    outline: none; border-color: var(--sepia-light);
-  }
-
-  .star-rating {
-    display: flex; gap: 0.5rem;
-    padding: 0.3rem 0;
-  }
-
-  .star-btn {
-    font-size: 1.5rem; cursor: pointer;
-    background: none; border: none;
-    color: var(--aged); transition: color 0.1s;
-    padding: 0.2rem;
-  }
-
-  .star-btn.active { color: #c4983a; }
-
-  .form-actions {
-    display: flex; gap: 0.7rem; margin-top: 1.2rem;
-  }
-
-  .btn-cancel {
-    flex: 1; padding: 0.8rem;
-    background: var(--aged); color: var(--sepia-dark);
-    border: none; border-radius: 4px;
-    font-size: 0.9rem; font-family: 'Noto Serif JP', serif;
-    cursor: pointer; font-weight: 600;
-  }
-
-  .btn-save {
-    flex: 2; padding: 0.8rem;
-    background: var(--sepia-dark); color: var(--paper);
-    border: none; border-radius: 4px;
-    font-size: 0.9rem; font-family: 'Noto Serif JP', serif;
-    cursor: pointer; font-weight: 600; letter-spacing: 0.1em;
-  }
-
-  /* Photo Modal */
-  .photo-area {
-    border: 2px dashed var(--sepia-light);
-    border-radius: 8px; padding: 2rem;
-    text-align: center; cursor: pointer;
-    margin-bottom: 1rem; background: white;
-    transition: all 0.2s;
-  }
-
-  .photo-area:hover { background: var(--paper); }
-
-  .photo-area .photo-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
-
-  .photo-area p { font-size: 0.85rem; color: var(--sepia); line-height: 1.7; }
-
-  #photoPreviewWrap {
-    display: none; margin-bottom: 1rem;
-    position: relative;
-  }
-
-  #photoPreview {
-    width: 100%; border-radius: 8px;
-    border: 2px solid var(--sepia-light);
-    display: block;
-  }
-
-  /* Selection canvas */
-  #selectionCanvas {
-    position: absolute; top: 0; left: 0;
-    width: 100%; height: 100%;
-    cursor: crosshair;
-    border-radius: 8px;
-    touch-action: none;
-  }
-
-  .selection-instruction {
-    font-size: 0.78rem; color: var(--sepia);
-    text-align: center; margin-bottom: 0.5rem;
-    line-height: 1.7;
-    padding: 0.5rem; background: var(--aged);
-    border-radius: 4px;
-  }
-
-  .ai-badge {
-    background: var(--green); color: white;
-    padding: 0.15rem 0.5rem; border-radius: 10px;
-    font-size: 0.7rem; font-weight: 600;
-    display: inline-block; margin-left: 0.3rem;
-  }
-
-  /* Candidates */
-  .candidates-list {
-    display: flex; flex-direction: column; gap: 0.8rem;
-  }
-
-  .candidate-card {
-    background: white; border: 1px solid var(--aged);
-    border-radius: 8px; padding: 1rem;
-    border-left: 4px solid var(--sepia-light);
-  }
-
-  .candidate-card .cand-phrase {
-    font-family: 'Shippori Mincho', serif;
-    font-size: 0.9rem; line-height: 1.9;
-    margin-bottom: 0.6rem;
-  }
-
-  .candidate-card .cand-meta {
-    font-size: 0.75rem; color: var(--sepia);
-    display: flex; gap: 0.5rem; flex-wrap: wrap;
-    margin-bottom: 0.6rem;
-  }
-
-  .candidate-actions {
-    display: flex; gap: 0.5rem;
-  }
-
-  .btn-register {
-    flex: 1; padding: 0.5rem;
-    background: var(--sepia-dark); color: var(--paper);
-    border: none; border-radius: 4px;
-    font-size: 0.8rem; font-family: 'Noto Serif JP', serif;
-    cursor: pointer; font-weight: 600;
-  }
-
-  .btn-skip {
-    padding: 0.5rem 0.8rem;
-    background: var(--aged); color: var(--sepia-dark);
-    border: none; border-radius: 4px;
-    font-size: 0.8rem; font-family: 'Noto Serif JP', serif;
-    cursor: pointer;
-  }
-
-  .loading-overlay {
-    position: fixed; inset: 0; z-index: 900;
-    background: rgba(245,240,232,0.9);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 1rem;
-  }
-
-  .loading-spinner {
-    width: 40px; height: 40px;
-    border: 3px solid var(--aged);
-    border-top-color: var(--sepia-dark);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .loading-text {
-    font-family: 'Shippori Mincho', serif;
-    font-size: 0.9rem; color: var(--sepia-dark);
-    letter-spacing: 0.1em;
-  }
-
-  .toast {
-    position: fixed; bottom: 5rem; left: 50%;
-    transform: translateX(-50%);
-    background: var(--sepia-dark); color: var(--paper);
-    padding: 0.6rem 1.2rem; border-radius: 20px;
-    font-size: 0.85rem; z-index: 999;
-    animation: toastIn 0.3s ease;
-    white-space: nowrap;
-  }
-
-  @keyframes toastIn {
-    from { opacity: 0; transform: translateX(-50%) translateY(10px); }
-    to { opacity: 1; transform: translateX(-50%) translateY(0); }
-  }
-
-  .count-badge {
-    background: rgba(245,240,232,0.3);
-    padding: 0.1rem 0.4rem; border-radius: 8px;
-    font-size: 0.75rem; margin-left: 0.3rem;
-  }
-
-  /* Settings modal */
-  .settings-item {
-    padding: 1rem 0;
-    border-bottom: 1px solid var(--aged);
-  }
-
-  .settings-item label {
-    display: block; font-size: 0.8rem;
-    color: var(--sepia); margin-bottom: 0.4rem;
-    font-weight: 600;
-  }
-
-  .settings-item input {
-    width: 100%; padding: 0.6rem;
-    border: 1px solid var(--aged);
-    border-radius: 4px; font-size: 0.85rem;
-    font-family: monospace;
-    background: white; color: var(--ink);
-  }
+    --ink:#1a1209; --paper:#f5f0e8; --aged:#e8dfc8;
+    --sepia:#8b6914; --sepia-light:#c4983a; --sepia-dark:#5c4408;
+    --red:#8b1a1a; --green:#1a5c1a; --shadow:rgba(26,18,9,0.15);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Noto Serif JP','Shippori Mincho',serif;background:var(--paper);color:var(--ink);min-height:100vh;background-image:repeating-linear-gradient(0deg,transparent,transparent 31px,rgba(139,105,20,0.08) 31px,rgba(139,105,20,0.08) 32px);}
+
+  #apiScreen{position:fixed;inset:0;z-index:1000;background:var(--paper);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;background-image:repeating-linear-gradient(0deg,transparent,transparent 31px,rgba(139,105,20,0.08) 31px,rgba(139,105,20,0.08) 32px);}
+  #apiScreen .book-icon{font-size:4rem;margin-bottom:1rem;animation:float 3s ease-in-out infinite;}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  #apiScreen h1{font-family:'Shippori Mincho',serif;font-size:1.8rem;font-weight:700;color:var(--sepia-dark);margin-bottom:.5rem;text-align:center;}
+  #apiScreen p{font-size:.85rem;color:var(--sepia);text-align:center;margin-bottom:2rem;line-height:1.8;}
+  .api-input-wrap{width:100%;max-width:400px;background:white;border:2px solid var(--sepia-light);border-radius:8px;padding:1.5rem;box-shadow:4px 4px 0 var(--aged);}
+  .api-input-wrap label{display:block;font-size:.8rem;color:var(--sepia);margin-bottom:.5rem;font-weight:600;letter-spacing:.05em;}
+  .api-input-wrap input{width:100%;padding:.7rem;border:1px solid var(--aged);border-radius:4px;font-size:.85rem;font-family:monospace;background:var(--paper);color:var(--ink);margin-bottom:1rem;}
+  .api-input-wrap input:focus{outline:none;border-color:var(--sepia-light);}
+  .btn-primary{width:100%;padding:.8rem;background:var(--sepia-dark);color:var(--paper);border:none;border-radius:4px;font-size:.9rem;font-family:'Noto Serif JP',serif;cursor:pointer;font-weight:600;letter-spacing:.1em;}
+  .btn-primary:hover{background:var(--sepia);}
+  .api-hint{font-size:.75rem;color:var(--sepia);text-align:center;margin-top:1rem;line-height:1.7;}
+  .api-hint a{color:var(--sepia-dark);}
+
+  #app{display:none;min-height:100vh;}
+  header{background:var(--sepia-dark);color:var(--paper);padding:1rem 1.2rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px var(--shadow);}
+  header h1{font-family:'Shippori Mincho',serif;font-size:1.2rem;font-weight:700;letter-spacing:.15em;}
+  .header-actions{display:flex;gap:.5rem;align-items:center;}
+  .icon-btn{background:rgba(245,240,232,.15);border:1px solid rgba(245,240,232,.3);color:var(--paper);padding:.4rem .7rem;border-radius:4px;font-size:.85rem;cursor:pointer;transition:all .2s;font-family:'Noto Serif JP',serif;}
+  .icon-btn:hover{background:rgba(245,240,232,.25);}
+  #gist-badge{font-size:.72rem;padding:.25rem .7rem;border-radius:10px;cursor:pointer;border:1px solid rgba(245,240,232,.3);background:rgba(245,240,232,.1);color:var(--paper);white-space:nowrap;transition:all .2s;font-family:'Noto Serif JP',serif;}
+  #gist-badge:hover{background:rgba(245,240,232,.25);}
+  #gist-badge.on{background:rgba(26,92,26,.4);border-color:rgba(100,200,100,.4);}
+
+  .cat-tabs{display:flex;overflow-x:auto;background:var(--aged);border-bottom:2px solid var(--sepia-light);padding:0 .5rem;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .cat-tabs::-webkit-scrollbar{display:none;}
+  .cat-tab{padding:.7rem 1rem;white-space:nowrap;font-size:.8rem;cursor:pointer;border-bottom:3px solid transparent;color:var(--sepia);transition:all .2s;font-family:'Noto Serif JP',serif;font-weight:500;flex-shrink:0;}
+  .cat-tab.active{color:var(--sepia-dark);border-bottom-color:var(--sepia-dark);font-weight:700;}
+  .filter-tabs-wrap{display:flex;align-items:center;background:white;border-bottom:1px solid var(--aged);padding:.2rem .5rem;min-height:36px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .filter-tabs-wrap::-webkit-scrollbar{display:none;}
+  .filter-label{font-size:.68rem;color:var(--sepia);white-space:nowrap;padding-right:.4rem;font-weight:700;flex-shrink:0;letter-spacing:.03em;}
+  .filter-chip{padding:.25rem .65rem;white-space:nowrap;font-size:.72rem;cursor:pointer;color:var(--sepia);transition:all .15s;font-family:'Noto Serif JP',serif;font-weight:500;flex-shrink:0;border-radius:12px;margin:.1rem;border:1px solid var(--aged);background:var(--paper);}
+  .filter-chip.active{background:var(--sepia-dark);color:var(--paper);border-color:var(--sepia-dark);font-weight:700;}
+  .search-bar{padding:.8rem 1rem;background:white;border-bottom:1px solid var(--aged);}
+  .search-bar input{width:100%;padding:.6rem .8rem;border:1px solid var(--aged);border-radius:20px;font-size:.85rem;font-family:'Noto Serif JP',serif;background:var(--paper);color:var(--ink);}
+  .search-bar input:focus{outline:none;border-color:var(--sepia-light);}
+
+  .cards-container{padding:1rem;display:flex;flex-direction:column;gap:.8rem;}
+  .phrase-card{background:white;border:1px solid var(--aged);border-radius:6px;padding:1rem;box-shadow:2px 2px 6px var(--shadow);position:relative;animation:fadeIn .3s ease;border-left:4px solid var(--sepia-light);}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .phrase-text{font-family:'Shippori Mincho',serif;font-size:.95rem;line-height:1.9;color:var(--ink);margin-bottom:.6rem;font-weight:500;}
+  .phrase-meta{font-size:.75rem;color:var(--sepia);display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.4rem;}
+  .phrase-source{font-style:italic;}
+  .phrase-tags{display:flex;gap:.3rem;flex-wrap:wrap;}
+  .tag{background:var(--aged);color:var(--sepia-dark);padding:.15rem .5rem;border-radius:10px;font-size:.7rem;font-weight:600;}
+  .stars{color:#c4983a;font-size:.85rem;}
+  .card-actions{position:absolute;top:.7rem;right:.7rem;display:flex;gap:.3rem;}
+  .card-btn{background:none;border:none;font-size:1rem;cursor:pointer;padding:.2rem;opacity:.5;transition:opacity .2s;}
+  .card-btn:hover{opacity:1;}
+  .phrase-memo{font-size:.78rem;color:var(--sepia);margin-top:.4rem;font-style:italic;line-height:1.6;padding-top:.4rem;border-top:1px dashed var(--aged);}
+  .cat-badge{background:var(--sepia-dark);color:var(--paper);padding:.1rem .5rem;border-radius:10px;font-size:.68rem;font-weight:600;}
+  .empty-state{text-align:center;padding:3rem 1rem;color:var(--sepia);opacity:.7;}
+  .empty-state .empty-icon{font-size:3rem;margin-bottom:1rem;}
+  .empty-state p{font-size:.9rem;line-height:1.8;}
+
+  .fab-group{position:fixed;bottom:1.5rem;right:1.5rem;display:flex;flex-direction:column;align-items:flex-end;gap:.6rem;z-index:200;}
+  .fab{width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;font-size:1.4rem;box-shadow:0 4px 12px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;transition:all .2s;}
+  .fab-main{background:var(--sepia-dark);color:var(--paper);}
+  .fab-sub{background:white;color:var(--sepia-dark);width:48px;height:48px;font-size:1.2rem;border:2px solid var(--sepia-light);display:none;}
+  .fab:hover{transform:scale(1.05);}
+  .fab-label{font-size:.7rem;color:var(--sepia-dark);background:white;padding:.2rem .5rem;border-radius:10px;border:1px solid var(--sepia-light);font-family:'Noto Serif JP',serif;display:none;white-space:nowrap;}
+  .fab-row{display:flex;align-items:center;gap:.5rem;}
+  .fab-row.show .fab-label{display:block;}
+  .fab-row.show .fab-sub{display:flex;}
+
+  .modal-overlay{position:fixed;inset:0;z-index:500;background:rgba(26,18,9,.6);display:flex;align-items:flex-end;animation:overlayIn .2s ease;}
+  .modal-overlay.center{align-items:center;}
+  @keyframes overlayIn{from{opacity:0}to{opacity:1}}
+  .modal{background:var(--paper);width:100%;max-height:92vh;border-radius:16px 16px 0 0;overflow-y:auto;padding:1.5rem 1.2rem;animation:slideUp .3s ease;background-image:repeating-linear-gradient(0deg,transparent,transparent 31px,rgba(139,105,20,.06) 31px,rgba(139,105,20,.06) 32px);}
+  .modal.centered{border-radius:16px;max-width:420px;width:92vw;margin:auto;}
+  @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .modal h2{font-family:'Shippori Mincho',serif;font-size:1.2rem;color:var(--sepia-dark);margin-bottom:1.2rem;text-align:center;letter-spacing:.15em;}
+  .form-group{margin-bottom:1rem;}
+  .form-group label{display:block;font-size:.78rem;color:var(--sepia);margin-bottom:.4rem;font-weight:600;letter-spacing:.05em;}
+  .form-group textarea,.form-group input,.form-group select{width:100%;padding:.7rem;border:1px solid var(--aged);border-radius:4px;font-size:.9rem;font-family:'Noto Serif JP',serif;background:white;color:var(--ink);resize:vertical;}
+  .form-group textarea:focus,.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--sepia-light);}
+  .star-rating{display:flex;gap:.5rem;padding:.3rem 0;}
+  .star-btn{font-size:1.5rem;cursor:pointer;background:none;border:none;color:var(--aged);transition:color .1s;padding:.2rem;}
+  .star-btn.active{color:#c4983a;}
+  .form-actions{display:flex;gap:.7rem;margin-top:1.2rem;}
+  .btn-cancel{flex:1;padding:.8rem;background:var(--aged);color:var(--sepia-dark);border:none;border-radius:4px;font-size:.9rem;font-family:'Noto Serif JP',serif;cursor:pointer;font-weight:600;}
+  .btn-save{flex:2;padding:.8rem;background:var(--sepia-dark);color:var(--paper);border:none;border-radius:4px;font-size:.9rem;font-family:'Noto Serif JP',serif;cursor:pointer;font-weight:600;letter-spacing:.1em;}
+
+  /* Gist modal */
+  .gist-info-box{font-size:.78rem;color:var(--sepia);line-height:1.9;padding:.8rem;background:var(--aged);border-radius:6px;margin-top:.6rem;}
+  #gist-id-result-wrap{display:none;padding:.8rem;background:white;border:1px solid var(--sepia-light);border-radius:6px;margin-top:.8rem;}
+  .result-label{font-size:.72rem;color:var(--sepia);margin-bottom:.4rem;font-weight:600;}
+  .gist-id-row{display:flex;align-items:center;gap:.5rem;}
+  #gist-id-result{font-size:.85rem;color:var(--sepia-dark);font-family:monospace;flex:1;word-break:break-all;}
+  .btn-copy{padding:.3rem .7rem;background:var(--aged);border:none;border-radius:4px;font-size:.75rem;cursor:pointer;font-family:'Noto Serif JP',serif;color:var(--sepia-dark);white-space:nowrap;}
+
+  .photo-area{border:2px dashed var(--sepia-light);border-radius:8px;padding:2rem;text-align:center;cursor:pointer;margin-bottom:1rem;background:white;transition:all .2s;}
+  .photo-area:hover{background:var(--paper);}
+  .photo-area .photo-icon{font-size:2.5rem;margin-bottom:.5rem;}
+  .photo-area p{font-size:.85rem;color:var(--sepia);line-height:1.7;}
+  #photoPreviewWrap{display:none;margin-bottom:1rem;position:relative;}
+  #photoPreview{width:100%;border-radius:8px;border:2px solid var(--sepia-light);display:block;}
+  #selectionCanvas{position:absolute;top:0;left:0;width:100%;height:100%;cursor:crosshair;border-radius:8px;touch-action:none;}
+  .selection-instruction{font-size:.78rem;color:var(--sepia);text-align:center;margin-bottom:.5rem;line-height:1.7;padding:.5rem;background:var(--aged);border-radius:4px;}
+  .candidates-list{display:flex;flex-direction:column;gap:.8rem;}
+  .candidate-card{background:white;border:1px solid var(--aged);border-radius:8px;padding:1rem;border-left:4px solid var(--sepia-light);}
+  .cand-phrase{font-family:'Shippori Mincho',serif;font-size:.9rem;line-height:1.9;margin-bottom:.6rem;}
+  .cand-meta{font-size:.75rem;color:var(--sepia);display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.6rem;}
+  .candidate-actions{display:flex;gap:.5rem;}
+  .btn-register{flex:1;padding:.5rem;background:var(--sepia-dark);color:var(--paper);border:none;border-radius:4px;font-size:.8rem;font-family:'Noto Serif JP',serif;cursor:pointer;font-weight:600;}
+  .btn-skip{padding:.5rem .8rem;background:var(--aged);color:var(--sepia-dark);border:none;border-radius:4px;font-size:.8rem;font-family:'Noto Serif JP',serif;cursor:pointer;}
+
+  .loading-overlay{position:fixed;inset:0;z-index:900;background:rgba(245,240,232,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;}
+  .loading-spinner{width:40px;height:40px;border:3px solid var(--aged);border-top-color:var(--sepia-dark);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-text{font-family:'Shippori Mincho',serif;font-size:.9rem;color:var(--sepia-dark);letter-spacing:.1em;}
+  .toast{position:fixed;bottom:5rem;left:50%;transform:translateX(-50%);background:var(--sepia-dark);color:var(--paper);padding:.6rem 1.2rem;border-radius:20px;font-size:.85rem;z-index:999;animation:toastIn .3s ease;white-space:nowrap;}
+  @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+  .count-badge{background:rgba(245,240,232,.3);padding:.1rem .4rem;border-radius:8px;font-size:.75rem;margin-left:.3rem;}
+  .settings-item{padding:1rem 0;border-bottom:1px solid var(--aged);}
+  .settings-item label{display:block;font-size:.8rem;color:var(--sepia);margin-bottom:.4rem;font-weight:600;}
+  .settings-item input{width:100%;padding:.6rem;border:1px solid var(--aged);border-radius:4px;font-size:.85rem;font-family:monospace;background:white;color:var(--ink);}
 </style>
 </head>
 <body>
 
-<!-- API Key Screen -->
 <div id="apiScreen">
   <div class="book-icon">📖</div>
   <h1>フレーズ蒐集帖</h1>
@@ -639,48 +148,26 @@
     <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-...">
     <button class="btn-primary" onclick="saveApiKey()">保存して始める</button>
   </div>
-  <p class="api-hint">
-    キーは <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> で取得できます<br>
-    ※ キーはこのブラウザにのみ保存されます
-  </p>
+  <p class="api-hint">キーは <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> で取得できます<br>※ キーはこのブラウザにのみ保存されます</p>
 </div>
 
-<!-- Main App -->
 <div id="app">
   <header>
     <h1>📖 フレーズ蒐集帖</h1>
     <div class="header-actions">
+      <span id="gist-badge" onclick="openGistModal()">☁ 未設定</span>
       <button class="icon-btn" onclick="openSearch()">🔍</button>
       <button class="icon-btn" onclick="openSettings()">⚙️</button>
     </div>
   </header>
-
   <div class="cat-tabs" id="catTabs"></div>
-  <div class="filter-tabs-wrap">
-    <div class="filter-label">絞り込み：</div>
-    <div class="cat-tabs filter-tabs" id="filterTabs"></div>
-  </div>
-
-  <div id="searchBarWrap" style="display:none">
-    <div class="search-bar">
-      <input type="text" id="searchInput" placeholder="フレーズ・著者・タグで検索..." oninput="renderCards()">
-    </div>
-  </div>
-
+  <div class="filter-tabs-wrap"><div class="filter-label">絞り込み：</div><div class="cat-tabs" id="filterTabs"></div></div>
+  <div id="searchBarWrap" style="display:none"><div class="search-bar"><input type="text" id="searchInput" placeholder="フレーズ・著者・タグで検索..." oninput="renderCards()"></div></div>
   <div class="cards-container" id="cardsContainer"></div>
-
   <div style="height:5rem"></div>
-
-  <!-- FAB -->
   <div class="fab-group">
-    <div class="fab-row" id="fabRow1">
-      <span class="fab-label">手動で追加</span>
-      <button class="fab fab-sub" onclick="openAddModal()">✏️</button>
-    </div>
-    <div class="fab-row" id="fabRow2">
-      <span class="fab-label">写真で追加</span>
-      <button class="fab fab-sub" onclick="openPhotoModal()">📷</button>
-    </div>
+    <div class="fab-row" id="fabRow1"><span class="fab-label">手動で追加</span><button class="fab fab-sub" onclick="openAddModal()">✏️</button></div>
+    <div class="fab-row" id="fabRow2"><span class="fab-label">写真で追加</span><button class="fab fab-sub" onclick="openPhotoModal()">📷</button></div>
     <button class="fab fab-main" id="fabMain" onclick="toggleFab()">＋</button>
   </div>
 </div>
@@ -689,66 +176,17 @@
 <div id="addModal" class="modal-overlay" style="display:none" onclick="closeAddModal(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <h2 id="modalTitle">フレーズを追加</h2>
-
-    <div class="form-group">
-      <label>フレーズ本文 *</label>
-      <textarea id="fPhrase" rows="4" placeholder="印象的なフレーズを入力..."></textarea>
+    <div class="form-group"><label>フレーズ本文 *</label><textarea id="fPhrase" rows="4" placeholder="印象的なフレーズを入力..."></textarea></div>
+    <div class="form-group"><label>カテゴリー</label><select id="fCategory"><option value="心情描写">💭 心情描写</option><option value="情景描写">🌿 情景描写</option><option value="セリフ">💬 セリフ</option><option value="場面説明">🎬 場面説明</option><option value="行動描写">⚡ 行動描写</option><option value="人物説明">👤 人物説明</option><option value="その他">📝 その他</option></select></div>
+    <div style="display:flex;gap:.7rem">
+      <div class="form-group" style="flex:1"><label>作品名</label><input type="text" id="fWork" placeholder="例：雪国"></div>
+      <div class="form-group" style="flex:1"><label>著者名</label><input type="text" id="fAuthor" placeholder="例：川端康成"></div>
     </div>
-
-    <div class="form-group">
-      <label>カテゴリー</label>
-      <select id="fCategory">
-        <option value="心情描写">💭 心情描写</option>
-        <option value="情景描写">🌿 情景描写</option>
-        <option value="セリフ">💬 セリフ</option>
-        <option value="場面説明">🎬 場面説明</option>
-        <option value="行動描写">⚡ 行動描写</option>
-        <option value="人物説明">👤 人物説明</option>
-        <option value="その他">📝 その他</option>
-      </select>
-    </div>
-
-    <div style="display:flex; gap:0.7rem">
-      <div class="form-group" style="flex:1">
-        <label>作品名</label>
-        <input type="text" id="fWork" placeholder="例：雪国">
-      </div>
-      <div class="form-group" style="flex:1">
-        <label>著者名</label>
-        <input type="text" id="fAuthor" placeholder="例：川端康成">
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label>ページ数</label>
-      <input type="text" id="fPage" placeholder="例：13">
-    </div>
-
-    <div class="form-group">
-      <label>タグ（カンマ区切り）</label>
-      <input type="text" id="fTags" placeholder="例：孤独, 冬, 美しい">
-    </div>
-
-    <div class="form-group">
-      <label>刺さり度</label>
-      <div class="star-rating" id="starRating">
-        <button class="star-btn" onclick="setStar(1)">★</button>
-        <button class="star-btn" onclick="setStar(2)">★</button>
-        <button class="star-btn" onclick="setStar(3)">★</button>
-        <button class="star-btn" onclick="setStar(4)">★</button>
-        <button class="star-btn" onclick="setStar(5)">★</button>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label>メモ・使いどころ</label>
-      <textarea id="fMemo" rows="2" placeholder="気づいたことや使いどころなど..."></textarea>
-    </div>
-
-    <div class="form-actions">
-      <button class="btn-cancel" onclick="closeAddModal()">キャンセル</button>
-      <button class="btn-save" onclick="savePhrase()">保存する</button>
-    </div>
+    <div class="form-group"><label>ページ数</label><input type="text" id="fPage" placeholder="例：13"></div>
+    <div class="form-group"><label>タグ（カンマ区切り）</label><input type="text" id="fTags" placeholder="例：孤独, 冬, 美しい"></div>
+    <div class="form-group"><label>刺さり度</label><div class="star-rating" id="starRating"><button class="star-btn" onclick="setStar(1)">★</button><button class="star-btn" onclick="setStar(2)">★</button><button class="star-btn" onclick="setStar(3)">★</button><button class="star-btn" onclick="setStar(4)">★</button><button class="star-btn" onclick="setStar(5)">★</button></div></div>
+    <div class="form-group"><label>メモ・使いどころ</label><textarea id="fMemo" rows="2" placeholder="気づいたことや使いどころなど..."></textarea></div>
+    <div class="form-actions"><button class="btn-cancel" onclick="closeAddModal()">キャンセル</button><button class="btn-save" onclick="savePhrase()">保存する</button></div>
   </div>
 </div>
 
@@ -756,37 +194,9 @@
 <div id="photoModal" class="modal-overlay" style="display:none" onclick="closePhotoModal(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <h2>📷 写真で追加</h2>
-
-    <div id="photoStep1">
-      <div class="photo-area" onclick="document.getElementById('photoFile').click()">
-        <div class="photo-icon">📸</div>
-        <p>タップして写真を選ぶ<br><small>本のページ・手書きメモなど</small></p>
-      </div>
-      <input type="file" id="photoFile" accept="image/*" style="display:none" onchange="onPhotoSelected(event)">
-    </div>
-
-    <div id="photoStep2" style="display:none">
-      <p class="selection-instruction">
-        📌 気になる箇所をドラッグして四角く囲んでください<br>
-        囲まなければページ全体から5候補を提案します
-      </p>
-      <div id="photoPreviewWrap">
-        <img id="photoPreview" src="" alt="プレビュー">
-        <canvas id="selectionCanvas"></canvas>
-      </div>
-      <div style="display:flex; gap:0.7rem; margin-top:0.8rem">
-        <button class="btn-cancel" onclick="resetPhoto()">撮り直す</button>
-        <button class="btn-save" onclick="analyzePhoto()">AIに読み取らせる</button>
-      </div>
-    </div>
-
-    <div id="photoStep3" style="display:none">
-      <p style="font-size:0.8rem; color:var(--sepia); margin-bottom:0.8rem; text-align:center">
-        📚 AIが提案した候補です。登録したいものを選んでください
-      </p>
-      <div class="candidates-list" id="candidatesList"></div>
-      <button class="btn-cancel" style="width:100%; margin-top:0.8rem" onclick="closePhotoModal()">閉じる</button>
-    </div>
+    <div id="photoStep1"><div class="photo-area" onclick="document.getElementById('photoFile').click()"><div class="photo-icon">📸</div><p>タップして写真を選ぶ<br><small>本のページ・手書きメモなど</small></p></div><input type="file" id="photoFile" accept="image/*" style="display:none" onchange="onPhotoSelected(event)"></div>
+    <div id="photoStep2" style="display:none"><p class="selection-instruction">📌 気になる箇所をドラッグして四角く囲んでください<br>囲まなければページ全体から5候補を提案します</p><div id="photoPreviewWrap"><img id="photoPreview" src="" alt="プレビュー"><canvas id="selectionCanvas"></canvas></div><div style="display:flex;gap:.7rem;margin-top:.8rem"><button class="btn-cancel" onclick="resetPhoto()">撮り直す</button><button class="btn-save" onclick="analyzePhoto()">AIに読み取らせる</button></div></div>
+    <div id="photoStep3" style="display:none"><p style="font-size:.8rem;color:var(--sepia);margin-bottom:.8rem;text-align:center">📚 AIが提案した候補です。登録したいものを選んでください</p><div class="candidates-list" id="candidatesList"></div><button class="btn-cancel" style="width:100%;margin-top:.8rem" onclick="closePhotoModal()">閉じる</button></div>
   </div>
 </div>
 
@@ -794,55 +204,71 @@
 <div id="settingsModal" class="modal-overlay" style="display:none" onclick="closeSettings(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <h2>⚙️ 設定</h2>
-    <div class="settings-item">
-      <label>APIキー</label>
-      <input type="password" id="settingsApiKey" placeholder="sk-ant-...">
+    <div class="settings-item"><label>APIキー</label><input type="password" id="settingsApiKey" placeholder="sk-ant-..."></div>
+    <div class="form-actions" style="margin-top:1rem"><button class="btn-cancel" onclick="closeSettings()">閉じる</button><button class="btn-save" onclick="updateApiKey()">更新する</button></div>
+    <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--aged);text-align:center"><button onclick="clearAll()" style="background:none;border:none;color:var(--red);font-size:.8rem;cursor:pointer;font-family:'Noto Serif JP',serif">全データを削除する</button></div>
+  </div>
+</div>
+
+<!-- Gist Modal -->
+<div id="gistModal" class="modal-overlay center" style="display:none" onclick="closeGistModal(event)">
+  <div class="modal centered" onclick="event.stopPropagation()">
+    <h2>☁ GitHub Gist 同期</h2>
+    <div class="form-group">
+      <label>GitHub Personal Access Token <span style="opacity:.5;font-size:.72rem;">（gistスコープのみでOK）</span></label>
+      <input type="password" id="gist-token-input" placeholder="ghp_xxxxxxxxxxxx">
+    </div>
+    <div class="form-group">
+      <label>Gist ID <span style="opacity:.5;font-size:.72rem;">（2台目以降は1台目で発行されたIDを入力）</span></label>
+      <input type="text" id="gist-id-input" placeholder="空欄なら新規作成">
+    </div>
+    <div id="gist-id-result-wrap">
+      <div class="result-label">📋 作成されたGist ID（2台目に入力してください）</div>
+      <div class="gist-id-row">
+        <span id="gist-id-result"></span>
+        <button class="btn-copy" onclick="copyGistId()">コピー</button>
+      </div>
+    </div>
+    <div class="gist-info-box">
+      <b>使い方：</b><br>
+      1台目 → トークンを入力して「接続」→ Gist IDが発行される<br>
+      2台目 → トークンとGist IDを両方入力して「接続」<br>
+      以降は保存のたびに自動でGistに同期されます
     </div>
     <div class="form-actions" style="margin-top:1rem">
-      <button class="btn-cancel" onclick="closeSettings()">閉じる</button>
-      <button class="btn-save" onclick="updateApiKey()">更新する</button>
-    </div>
-    <div style="margin-top:1rem; padding-top:1rem; border-top:1px solid var(--aged); text-align:center">
-      <button onclick="clearAll()" style="background:none; border:none; color:var(--red); font-size:0.8rem; cursor:pointer; font-family:'Noto Serif JP',serif">
-        全データを削除する
-      </button>
+      <button class="btn-cancel" onclick="closeGistModal()">閉じる</button>
+      <button class="btn-cancel" onclick="disconnectGist()" style="color:var(--red);">同期解除</button>
+      <button class="btn-save" id="gist-connect-btn" onclick="setupGist()">接続する</button>
     </div>
   </div>
 </div>
 
-<!-- Loading -->
-<div id="loadingOverlay" class="loading-overlay" style="display:none">
-  <div class="loading-spinner"></div>
-  <div class="loading-text" id="loadingText">AIが読み取り中...</div>
-</div>
+<div id="loadingOverlay" class="loading-overlay" style="display:none"><div class="loading-spinner"></div><div class="loading-text" id="loadingText">AIが読み取り中...</div></div>
 
 <script>
-const CATEGORIES = ['すべて', '心情描写', '情景描写', 'セリフ', '場面説明', '行動描写', '人物説明', 'その他'];
-const CAT_ICONS = { 'すべて':'📚','心情描写':'💭','情景描写':'🌿','セリフ':'💬','場面説明':'🎬','行動描写':'⚡','人物説明':'👤','その他':'📝' };
+const CATEGORIES = ['すべて','心情描写','情景描写','セリフ','場面説明','行動描写','人物説明','その他'];
+const CAT_ICONS  = {'すべて':'📚','心情描写':'💭','情景描写':'🌿','セリフ':'💬','場面説明':'🎬','行動描写':'⚡','人物説明':'👤','その他':'📝'};
+const GIST_FILENAME = 'phrase_db.json';
 
-let phrases = [];
-let currentCat = 'すべて';
-let currentFilter = 'すべて'; // work or author filter
-let currentFilterType = 'work'; // 'work' or 'author'
-let editingId = null;
-let currentStar = 0;
-let fabOpen = false;
-let apiKey = '';
+let phrases=[], currentCat='すべて', currentFilter='すべて', currentFilterType='work';
+let editingId=null, currentStar=0, fabOpen=false;
+let apiKey='', gistToken='', gistId='';
+let isDragging=false, startX, startY, endX, endY, selections=[], currentPhotoFile=null;
 
-// Drag selection state
-let isDragging = false;
-let startX, startY, endX, endY;
-let selections = [];
-let canvasRect;
-let currentPhotoFile = null;
-
-// Init
-window.onload = () => {
-  apiKey = localStorage.getItem('phrase_api_key') || '';
-  phrases = JSON.parse(localStorage.getItem('phrase_db') || '[]');
+// ── INIT ──
+window.onload = async () => {
+  apiKey    = localStorage.getItem('phrase_api_key')    || '';
+  gistToken = localStorage.getItem('phrase_gist_token') || '';
+  gistId    = localStorage.getItem('phrase_gist_id')    || '';
+  phrases   = JSON.parse(localStorage.getItem('phrase_db') || '[]');
+  updateGistBadge();
 
   if (apiKey) {
     showApp();
+    if (gistToken && gistId) {
+      const ok = await pullFromGist();
+      if (ok) { renderTabs(); renderCards(); showToast('☁ Gistから最新データを読み込みました'); }
+    }
   } else {
     document.getElementById('apiScreen').style.display = 'flex';
   }
@@ -851,542 +277,252 @@ window.onload = () => {
 function saveApiKey() {
   const key = document.getElementById('apiKeyInput').value.trim();
   if (!key.startsWith('sk-ant-')) { showToast('APIキーはsk-ant-で始まります'); return; }
-  localStorage.setItem('phrase_api_key', key);
-  apiKey = key;
-  showApp();
+  localStorage.setItem('phrase_api_key', key); apiKey = key; showApp();
 }
 
 function showApp() {
   document.getElementById('apiScreen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
-  renderTabs();
-  renderFilterTabs();
-  renderCards();
+  renderTabs(); renderFilterTabs(); renderCards();
 }
 
-function renderTabs() {
-  const tabs = document.getElementById('catTabs');
-  tabs.innerHTML = CATEGORIES.map(c => {
-    const count = c === 'すべて' ? phrases.length : phrases.filter(p => p.category === c).length;
-    return `<div class="cat-tab ${c === currentCat ? 'active' : ''}" onclick="selectCat('${c}')">
-      ${CAT_ICONS[c]} ${c}<span class="count-badge">${count}</span>
-    </div>`;
-  }).join('');
+// ── GIST ──
+function updateGistBadge() {
+  const el = document.getElementById('gist-badge'); if (!el) return;
+  if (gistToken && gistId) { el.textContent='☁ 同期ON'; el.classList.add('on'); }
+  else { el.textContent='☁ 未設定'; el.classList.remove('on'); }
 }
 
-function selectCat(cat) {
-  currentCat = cat;
-  currentFilter = 'すべて';
-  renderTabs();
-  renderFilterTabs();
-  renderCards();
+function openGistModal() {
+  document.getElementById('gist-token-input').value = gistToken;
+  document.getElementById('gist-id-input').value = gistId;
+  document.getElementById('gist-id-result-wrap').style.display = 'none';
+  document.getElementById('gistModal').style.display = 'flex';
 }
 
-function renderFilterTabs() {
-  const wrap = document.getElementById('filterTabs');
-
-  // Collect unique works and authors from current category
-  let pool = currentCat === 'すべて' ? phrases : phrases.filter(p => p.category === currentCat);
-  const works = [...new Set(pool.map(p => p.work).filter(Boolean))];
-  const authors = [...new Set(pool.map(p => p.author).filter(Boolean))];
-
-  if (works.length === 0 && authors.length === 0) {
-    wrap.parentElement.style.display = 'none';
-    return;
-  }
-  wrap.parentElement.style.display = 'flex';
-
-  const allChip = `<span class="filter-chip ${currentFilter === 'すべて' ? 'active' : ''}" onclick="selectFilter('すべて','')">すべて</span>`;
-  const workChips = works.map(w => `<span class="filter-chip ${currentFilter === w && currentFilterType === 'work' ? 'active' : ''}" onclick="selectFilter('${w}','work')">📖 ${w}</span>`).join('');
-  const authorChips = authors.map(a => `<span class="filter-chip ${currentFilter === a && currentFilterType === 'author' ? 'active' : ''}" onclick="selectFilter('${a}','author')">✍️ ${a}</span>`).join('');
-
-  wrap.innerHTML = allChip + workChips + authorChips;
+function closeGistModal(e) {
+  if (e && e.target !== document.getElementById('gistModal')) return;
+  document.getElementById('gistModal').style.display = 'none';
 }
 
-function selectFilter(value, type) {
-  currentFilter = value;
-  currentFilterType = type;
-  renderFilterTabs();
-  renderCards();
-}
+async function setupGist() {
+  const token = document.getElementById('gist-token-input').value.trim();
+  const existingId = document.getElementById('gist-id-input').value.trim();
+  if (!token) { showToast('トークンを入力してください'); return; }
+  const btn = document.getElementById('gist-connect-btn');
+  btn.textContent = '接続中…'; btn.disabled = true;
+  gistToken = token;
+  localStorage.setItem('phrase_gist_token', token);
 
-function renderCards() {
-  const search = document.getElementById('searchInput')?.value?.toLowerCase() || '';
-  let filtered = phrases;
-
-  if (currentCat !== 'すべて') filtered = filtered.filter(p => p.category === currentCat);
-  if (currentFilter !== 'すべて') {
-    if (currentFilterType === 'work') filtered = filtered.filter(p => p.work === currentFilter);
-    if (currentFilterType === 'author') filtered = filtered.filter(p => p.author === currentFilter);
-  }
-  if (search) {
-    filtered = filtered.filter(p =>
-      p.phrase.toLowerCase().includes(search) ||
-      (p.author || '').toLowerCase().includes(search) ||
-      (p.tags || '').toLowerCase().includes(search) ||
-      (p.work || '').toLowerCase().includes(search)
-    );
-  }
-
-  const container = document.getElementById('cardsContainer');
-
-  if (filtered.length === 0) {
-    container.innerHTML = `<div class="empty-state">
-      <div class="empty-icon">🪶</div>
-      <p>${search ? '該当するフレーズが見つかりません' : 'まだフレーズがありません\n＋ボタンから追加してください'}</p>
-    </div>`;
-    return;
-  }
-
-  container.innerHTML = filtered.map(p => {
-    const stars = p.star ? '★'.repeat(p.star) + '☆'.repeat(5-p.star) : '';
-    const tags = p.tags ? p.tags.split(',').map(t => `<span class="tag">${t.trim()}</span>`).join('') : '';
-    const source = [p.work, p.author].filter(Boolean).join(' / ');
-    const pageStr = p.page ? `p.${p.page}` : '';
-    return `<div class="phrase-card">
-      <div class="card-actions">
-        <button class="card-btn" onclick="editPhrase('${p.id}')">✏️</button>
-        <button class="card-btn" onclick="deletePhrase('${p.id}')">🗑️</button>
-      </div>
-      <div class="phrase-text">${p.phrase}</div>
-      <div class="phrase-meta">
-        <span class="cat-badge">${CAT_ICONS[p.category] || ''} ${p.category}</span>
-        ${source ? `<span class="phrase-source">『${source}』</span>` : ''}
-        ${pageStr ? `<span style="font-size:0.72rem;color:var(--sepia)">📄 ${pageStr}</span>` : ''}
-        ${stars ? `<span class="stars">${stars}</span>` : ''}
-      </div>
-      ${tags ? `<div class="phrase-tags">${tags}</div>` : ''}
-      ${p.memo ? `<div class="phrase-memo">📝 ${p.memo}</div>` : ''}
-    </div>`;
-  }).join('');
-}
-
-function setStar(n) {
-  currentStar = n;
-  document.querySelectorAll('.star-btn').forEach((b, i) => {
-    b.classList.toggle('active', i < n);
-  });
-}
-
-function toggleFab() {
-  fabOpen = !fabOpen;
-  document.getElementById('fabMain').textContent = fabOpen ? '✕' : '＋';
-  document.getElementById('fabRow1').classList.toggle('show', fabOpen);
-  document.getElementById('fabRow2').classList.toggle('show', fabOpen);
-}
-
-function openAddModal(prefill) {
-  fabOpen = false;
-  document.getElementById('fabMain').textContent = '＋';
-  document.getElementById('fabRow1').classList.remove('show');
-  document.getElementById('fabRow2').classList.remove('show');
-
-  editingId = null;
-  currentStar = 0;
-  document.getElementById('modalTitle').textContent = 'フレーズを追加';
-  document.getElementById('fPhrase').value = prefill?.phrase || '';
-  document.getElementById('fCategory').value = prefill?.category || '心情描写';
-  document.getElementById('fWork').value = prefill?.work || '';
-  document.getElementById('fAuthor').value = prefill?.author || '';
-  document.getElementById('fPage').value = prefill?.page || '';
-  document.getElementById('fTags').value = prefill?.tags || '';
-  document.getElementById('fMemo').value = prefill?.memo || '';
-  setStar(prefill?.star || 0);
-  document.getElementById('addModal').style.display = 'flex';
-}
-
-function closeAddModal(e) {
-  if (e && e.target !== document.getElementById('addModal')) return;
-  document.getElementById('addModal').style.display = 'none';
-}
-
-function editPhrase(id) {
-  const p = phrases.find(x => x.id === id);
-  if (!p) return;
-  editingId = id;
-  document.getElementById('modalTitle').textContent = 'フレーズを編集';
-  document.getElementById('fPhrase').value = p.phrase;
-  document.getElementById('fCategory').value = p.category;
-  document.getElementById('fWork').value = p.work || '';
-  document.getElementById('fAuthor').value = p.author || '';
-  document.getElementById('fPage').value = p.page || '';
-  document.getElementById('fTags').value = p.tags || '';
-  document.getElementById('fMemo').value = p.memo || '';
-  setStar(p.star || 0);
-  document.getElementById('addModal').style.display = 'flex';
-}
-
-function savePhrase() {
-  const phrase = document.getElementById('fPhrase').value.trim();
-  if (!phrase) { showToast('フレーズを入力してください'); return; }
-
-  const data = {
-    id: editingId || Date.now().toString(),
-    phrase,
-    category: document.getElementById('fCategory').value,
-    work: document.getElementById('fWork').value.trim(),
-    author: document.getElementById('fAuthor').value.trim(),
-    page: document.getElementById('fPage').value.trim(),
-    tags: document.getElementById('fTags').value.trim(),
-    star: currentStar,
-    memo: document.getElementById('fMemo').value.trim(),
-    createdAt: editingId ? (phrases.find(p=>p.id===editingId)?.createdAt || Date.now()) : Date.now()
-  };
-
-  if (editingId) {
-    const idx = phrases.findIndex(p => p.id === editingId);
-    phrases[idx] = data;
+  if (existingId) {
+    gistId = existingId;
+    localStorage.setItem('phrase_gist_id', gistId);
+    const ok = await pullFromGist();
+    if (ok) {
+      showToast('☁ Gistからデータを読み込みました！');
+      document.getElementById('gistModal').style.display = 'none';
+      renderTabs(); renderFilterTabs(); renderCards();
+    } else { showToast('⚠ Gist IDが見つかりません。確認してください'); }
   } else {
-    phrases.unshift(data);
+    const id = await createGist();
+    if (id) {
+      gistId = id;
+      localStorage.setItem('phrase_gist_id', gistId);
+      document.getElementById('gist-id-result').textContent = id;
+      document.getElementById('gist-id-result-wrap').style.display = 'block';
+      showToast('☁ Gistを作成しました！IDを控えてください');
+    } else { showToast('⚠ Gist作成に失敗しました。トークンを確認してください'); }
   }
-
-  save();
-  document.getElementById('addModal').style.display = 'none';
-  showToast(editingId ? '更新しました' : '追加しました');
+  btn.textContent = '接続する'; btn.disabled = false;
+  updateGistBadge();
 }
 
-function deletePhrase(id) {
-  if (!confirm('このフレーズを削除しますか？')) return;
-  phrases = phrases.filter(p => p.id !== id);
-  save();
-  showToast('削除しました');
+function copyGistId() {
+  navigator.clipboard.writeText(document.getElementById('gist-id-result').textContent)
+    .then(() => showToast('コピーしました'));
 }
 
+function disconnectGist() {
+  if (!confirm('Gist同期を解除しますか？（データは消えません）')) return;
+  gistToken=''; gistId='';
+  localStorage.removeItem('phrase_gist_token'); localStorage.removeItem('phrase_gist_id');
+  showToast('同期を解除しました');
+  document.getElementById('gistModal').style.display = 'none';
+  updateGistBadge();
+}
+
+async function pushToGist() {
+  if (!gistToken || !gistId) return false;
+  try {
+    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+      method: 'PATCH',
+      headers: { 'Authorization': `Bearer ${gistToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ files: { [GIST_FILENAME]: { content: JSON.stringify(phrases) } } })
+    });
+    return res.ok;
+  } catch(e) { return false; }
+}
+
+async function pullFromGist() {
+  if (!gistToken || !gistId) return false;
+  try {
+    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+      headers: { 'Authorization': `Bearer ${gistToken}` }
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    const content = data.files?.[GIST_FILENAME]?.content;
+    if (!content) return false;
+    phrases = JSON.parse(content);
+    localStorage.setItem('phrase_db', JSON.stringify(phrases));
+    return true;
+  } catch(e) { return false; }
+}
+
+async function createGist() {
+  try {
+    const res = await fetch('https://api.github.com/gists', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${gistToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description:'フレーズ蒐集帖 データ', public:false, files:{ [GIST_FILENAME]:{ content:JSON.stringify(phrases) } } })
+    });
+    if (!res.ok) return null;
+    return (await res.json()).id;
+  } catch(e) { return null; }
+}
+
+// ── DATA ──
 function save() {
   localStorage.setItem('phrase_db', JSON.stringify(phrases));
-  renderTabs();
-  renderFilterTabs();
-  renderCards();
+  if (gistToken && gistId) pushToGist().then(ok => { if (!ok) showToast('⚠ Gist同期失敗（ローカルには保存済）'); });
+  renderTabs(); renderFilterTabs(); renderCards();
 }
 
-// Photo Modal
-function openPhotoModal() {
-  fabOpen = false;
-  document.getElementById('fabMain').textContent = '＋';
-  document.getElementById('fabRow1').classList.remove('show');
-  document.getElementById('fabRow2').classList.remove('show');
-  document.getElementById('photoModal').style.display = 'flex';
-  resetPhoto();
+// ── RENDER ──
+function renderTabs() {
+  document.getElementById('catTabs').innerHTML = CATEGORIES.map(c => {
+    const count = c==='すべて' ? phrases.length : phrases.filter(p=>p.category===c).length;
+    return `<div class="cat-tab ${c===currentCat?'active':''}" onclick="selectCat('${c}')">${CAT_ICONS[c]} ${c}<span class="count-badge">${count}</span></div>`;
+  }).join('');
 }
-
-function closePhotoModal(e) {
-  if (e && e.target !== document.getElementById('photoModal')) return;
-  document.getElementById('photoModal').style.display = 'none';
-  resetPhoto();
+function selectCat(cat) { currentCat=cat; currentFilter='すべて'; renderTabs(); renderFilterTabs(); renderCards(); }
+function renderFilterTabs() {
+  const wrap = document.getElementById('filterTabs');
+  let pool = currentCat==='すべて' ? phrases : phrases.filter(p=>p.category===currentCat);
+  const works=[...new Set(pool.map(p=>p.work).filter(Boolean))];
+  const authors=[...new Set(pool.map(p=>p.author).filter(Boolean))];
+  if (!works.length&&!authors.length) { wrap.parentElement.style.display='none'; return; }
+  wrap.parentElement.style.display='flex';
+  wrap.innerHTML=
+    `<span class="filter-chip ${currentFilter==='すべて'?'active':''}" onclick="selectFilter('すべて','')">すべて</span>`+
+    works.map(w=>`<span class="filter-chip ${currentFilter===w&&currentFilterType==='work'?'active':''}" onclick="selectFilter('${w}','work')">📖 ${w}</span>`).join('')+
+    authors.map(a=>`<span class="filter-chip ${currentFilter===a&&currentFilterType==='author'?'active':''}" onclick="selectFilter('${a}','author')">✍️ ${a}</span>`).join('');
 }
-
-function resetPhoto() {
-  document.getElementById('photoStep1').style.display = 'block';
-  document.getElementById('photoStep2').style.display = 'none';
-  document.getElementById('photoStep3').style.display = 'none';
-  document.getElementById('photoFile').value = '';
-  selections = [];
-  currentPhotoFile = null;
-}
-
-function onPhotoSelected(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  currentPhotoFile = file;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    const img = document.getElementById('photoPreview');
-    img.src = ev.target.result;
-    img.onload = () => {
-      document.getElementById('photoStep1').style.display = 'none';
-      document.getElementById('photoStep2').style.display = 'block';
-      setupCanvas();
-    };
-  };
-  reader.readAsDataURL(file);
-}
-
-function setupCanvas() {
-  const img = document.getElementById('photoPreview');
-  const canvas = document.getElementById('selectionCanvas');
-  canvas.width = img.offsetWidth;
-  canvas.height = img.offsetHeight;
-  selections = [];
-  drawSelections();
-
-  canvas.addEventListener('mousedown', startSelect);
-  canvas.addEventListener('mousemove', moveSelect);
-  canvas.addEventListener('mouseup', endSelect);
-  canvas.addEventListener('touchstart', startSelect, {passive:false});
-  canvas.addEventListener('touchmove', moveSelect, {passive:false});
-  canvas.addEventListener('touchend', endSelect, {passive:false});
-}
-
-function getPos(e, canvas) {
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
-  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-  return {
-    x: (clientX - rect.left) * scaleX,
-    y: (clientY - rect.top) * scaleY
-  };
-}
-
-function startSelect(e) {
-  e.preventDefault();
-  const canvas = document.getElementById('selectionCanvas');
-  const pos = getPos(e, canvas);
-  isDragging = true;
-  startX = pos.x; startY = pos.y;
-  endX = pos.x; endY = pos.y;
-}
-
-function moveSelect(e) {
-  e.preventDefault();
-  if (!isDragging) return;
-  const canvas = document.getElementById('selectionCanvas');
-  const pos = getPos(e, canvas);
-  endX = pos.x; endY = pos.y;
-  drawSelections(true);
-}
-
-function endSelect(e) {
-  e.preventDefault();
-  if (!isDragging) return;
-  isDragging = false;
-  const w = Math.abs(endX - startX);
-  const h = Math.abs(endY - startY);
-  if (w > 10 && h > 10) {
-    selections.push({
-      x: Math.min(startX, endX),
-      y: Math.min(startY, endY),
-      w, h
-    });
-  }
-  drawSelections();
-}
-
-function drawSelections(withCurrent) {
-  const canvas = document.getElementById('selectionCanvas');
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  ctx.strokeStyle = 'rgba(139,105,20,0.8)';
-  ctx.fillStyle = 'rgba(196,152,58,0.15)';
-  ctx.lineWidth = 2;
-
-  selections.forEach(s => {
-    ctx.beginPath();
-    ctx.rect(s.x, s.y, s.w, s.h);
-    ctx.fill();
-    ctx.stroke();
-  });
-
-  if (withCurrent && isDragging) {
-    const x = Math.min(startX, endX);
-    const y = Math.min(startY, endY);
-    const w = Math.abs(endX - startX);
-    const h = Math.abs(endY - startY);
-    ctx.setLineDash([5, 3]);
-    ctx.beginPath();
-    ctx.rect(x, y, w, h);
-    ctx.fill();
-    ctx.stroke();
-    ctx.setLineDash([]);
-  }
-}
-
-async function analyzePhoto() {
-  if (!currentPhotoFile) return;
-
-  showLoading('AIが読み取り中...');
-
-  try {
-    const base64 = await fileToBase64(currentPhotoFile);
-    const hasSelection = selections.length > 0;
-
-    const systemPrompt = `あなたは日本文学に精通した編集者です。提供された本のページ画像を分析し、文学的に優れたフレーズを抽出してください。`;
-
-    const userPrompt = hasSelection
-      ? `この本のページ画像で、選択された矩形領域（全体の一部）のテキストを読み取り、その中から文学的に印象深いフレーズを最大3つ抽出してください。選択領域がなければページ全体から5つ抽出してください。
-
-各フレーズについて以下のJSON配列で返してください（他のテキストは一切不要）：
-[{"phrase":"フレーズ本文","category":"心情描写|情景描写|セリフ|場面説明|行動描写|人物説明|その他","star":1-5,"tags":"タグ1,タグ2","work":"","author":""}]
-
-カテゴリーは必ず上記の選択肢から選ぶこと。starは文学的価値で1-5で評価。作品名・著者名・ページ番号がページから読み取れれば入れること。ページ番号はページの端に印刷されている数字です。`
-      : `この本のページ画像から、文学的に最も印象深い・心に刺さるフレーズを5つ抽出してください。
-
-各フレーズについて以下のJSON配列で返してください（他のテキストは一切不要）：
-[{"phrase":"フレーズ本文","category":"心情描写|情景描写|セリフ|場面説明|行動描写|人物説明|その他","star":1-5,"tags":"タグ1,タグ2","work":"","author":"","page":"ページ番号"}]
-
-カテゴリーは必ず上記の選択肢から選ぶこと。starは文学的価値で1-5で評価。作品名・著者名・ページ番号がページから読み取れれば入れること。ページ番号はページの端（右端・左端・上・下）に印刷されている数字です。縦書き・横書き問わず正確に読み取ること。`;
-
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-opus-4-6',
-        max_tokens: 2000,
-        system: systemPrompt,
-        messages: [{
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: currentPhotoFile.type,
-                data: base64
-              }
-            },
-            { type: 'text', text: userPrompt }
-          ]
-        }]
-      })
-    });
-
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error?.message || '読み取りに失敗しました');
-
-    const text = data.content[0]?.text || '';
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) throw new Error('結果を解析できませんでした');
-
-    const candidates = JSON.parse(jsonMatch[0]);
-    hideLoading();
-    showCandidates(candidates);
-
-  } catch (err) {
-    hideLoading();
-    showToast('❌ ' + (err.message || '読み取りに失敗しました'));
-    console.error(err);
-  }
-}
-
-function showCandidates(candidates) {
-  document.getElementById('photoStep2').style.display = 'none';
-  document.getElementById('photoStep3').style.display = 'block';
-
-  const list = document.getElementById('candidatesList');
-  list.innerHTML = candidates.map((c, i) => {
-    const stars = c.star ? '★'.repeat(c.star) + '☆'.repeat(5-c.star) : '';
-    return `<div class="candidate-card" id="cand_${i}">
-      <div class="cand-phrase">${c.phrase}</div>
-      <div class="cand-meta">
-        <span class="cat-badge">${CAT_ICONS[c.category]||''} ${c.category}</span>
-        ${stars ? `<span class="stars">${stars}</span>` : ''}
-        ${c.page ? `<span style="font-size:0.72rem">📄 p.${c.page}</span>` : ''}
-        ${c.tags ? `<span>${c.tags}</span>` : ''}
-      </div>
-      <div class="candidate-actions">
-        <button class="btn-register" onclick="registerCandidate(${i}, ${JSON.stringify(c).replace(/"/g,'&quot;')})">登録する</button>
-        <button class="btn-register" style="background:var(--sepia)" onclick="editCandidate(${i}, ${JSON.stringify(c).replace(/"/g,'&quot;')})">編集して登録</button>
-        <button class="btn-skip" onclick="skipCandidate(${i})">スキップ</button>
-      </div>
+function selectFilter(v,t) { currentFilter=v; currentFilterType=t; renderFilterTabs(); renderCards(); }
+function renderCards() {
+  const search=(document.getElementById('searchInput')?.value||'').toLowerCase();
+  let filtered=phrases;
+  if (currentCat!=='すべて') filtered=filtered.filter(p=>p.category===currentCat);
+  if (currentFilter!=='すべて') { filtered=filtered.filter(p=>currentFilterType==='work'?p.work===currentFilter:p.author===currentFilter); }
+  if (search) filtered=filtered.filter(p=>p.phrase.toLowerCase().includes(search)||(p.author||'').toLowerCase().includes(search)||(p.tags||'').toLowerCase().includes(search)||(p.work||'').toLowerCase().includes(search));
+  const container=document.getElementById('cardsContainer');
+  if (!filtered.length) { container.innerHTML=`<div class="empty-state"><div class="empty-icon">🪶</div><p>${search?'該当するフレーズが見つかりません':'まだフレーズがありません\n＋ボタンから追加してください'}</p></div>`; return; }
+  container.innerHTML=filtered.map(p=>{
+    const stars=p.star?'★'.repeat(p.star)+'☆'.repeat(5-p.star):'';
+    const tags=p.tags?p.tags.split(',').map(t=>`<span class="tag">${t.trim()}</span>`).join(''):'';
+    const source=[p.work,p.author].filter(Boolean).join(' / ');
+    return `<div class="phrase-card">
+      <div class="card-actions"><button class="card-btn" onclick="editPhrase('${p.id}')">✏️</button><button class="card-btn" onclick="deletePhrase('${p.id}')">🗑️</button></div>
+      <div class="phrase-text">${p.phrase}</div>
+      <div class="phrase-meta"><span class="cat-badge">${CAT_ICONS[p.category]||''} ${p.category}</span>${source?`<span class="phrase-source">『${source}』</span>`:''} ${p.page?`<span style="font-size:.72rem;color:var(--sepia)">📄 p.${p.page}</span>`:''} ${stars?`<span class="stars">${stars}</span>`:''}</div>
+      ${tags?`<div class="phrase-tags">${tags}</div>`:''}
+      ${p.memo?`<div class="phrase-memo">📝 ${p.memo}</div>`:''}
     </div>`;
   }).join('');
 }
 
-function registerCandidate(i, c) {
-  const data = {
-    id: Date.now().toString() + i,
-    phrase: c.phrase,
-    category: c.category,
-    work: c.work || '',
-    author: c.author || '',
-    page: c.page || '',
-    tags: c.tags || '',
-    star: c.star || 0,
-    memo: '',
-    createdAt: Date.now()
-  };
-  phrases.unshift(data);
-  save();
-  document.getElementById('cand_' + i).style.opacity = '0.4';
-  document.getElementById('cand_' + i).querySelector('.candidate-actions').innerHTML = '<span style="font-size:0.8rem;color:var(--green)">✓ 登録済み</span>';
-  showToast('登録しました');
+// ── FORM ──
+function setStar(n) { currentStar=n; document.querySelectorAll('.star-btn').forEach((b,i)=>b.classList.toggle('active',i<n)); }
+function toggleFab() { fabOpen=!fabOpen; document.getElementById('fabMain').textContent=fabOpen?'✕':'＋'; document.getElementById('fabRow1').classList.toggle('show',fabOpen); document.getElementById('fabRow2').classList.toggle('show',fabOpen); }
+function openAddModal(prefill) {
+  fabOpen=false; document.getElementById('fabMain').textContent='＋';
+  document.getElementById('fabRow1').classList.remove('show'); document.getElementById('fabRow2').classList.remove('show');
+  editingId=null; currentStar=0;
+  document.getElementById('modalTitle').textContent='フレーズを追加';
+  ['fPhrase','fWork','fAuthor','fPage','fTags','fMemo'].forEach(id=>document.getElementById(id).value=prefill?.[id.slice(1).toLowerCase()]||prefill?.[id]||'');
+  document.getElementById('fPhrase').value=prefill?.phrase||'';
+  document.getElementById('fCategory').value=prefill?.category||'心情描写';
+  document.getElementById('fWork').value=prefill?.work||''; document.getElementById('fAuthor').value=prefill?.author||'';
+  document.getElementById('fPage').value=prefill?.page||''; document.getElementById('fTags').value=prefill?.tags||'';
+  document.getElementById('fMemo').value=prefill?.memo||'';
+  setStar(prefill?.star||0);
+  document.getElementById('addModal').style.display='flex';
 }
+function closeAddModal(e) { if(e&&e.target!==document.getElementById('addModal')) return; document.getElementById('addModal').style.display='none'; }
+function editPhrase(id) {
+  const p=phrases.find(x=>x.id===id); if(!p) return;
+  editingId=id; document.getElementById('modalTitle').textContent='フレーズを編集';
+  document.getElementById('fPhrase').value=p.phrase; document.getElementById('fCategory').value=p.category;
+  document.getElementById('fWork').value=p.work||''; document.getElementById('fAuthor').value=p.author||'';
+  document.getElementById('fPage').value=p.page||''; document.getElementById('fTags').value=p.tags||'';
+  document.getElementById('fMemo').value=p.memo||''; setStar(p.star||0);
+  document.getElementById('addModal').style.display='flex';
+}
+function savePhrase() {
+  const phrase=document.getElementById('fPhrase').value.trim();
+  if (!phrase) { showToast('フレーズを入力してください'); return; }
+  const data={id:editingId||Date.now().toString(),phrase,category:document.getElementById('fCategory').value,work:document.getElementById('fWork').value.trim(),author:document.getElementById('fAuthor').value.trim(),page:document.getElementById('fPage').value.trim(),tags:document.getElementById('fTags').value.trim(),star:currentStar,memo:document.getElementById('fMemo').value.trim(),createdAt:editingId?(phrases.find(p=>p.id===editingId)?.createdAt||Date.now()):Date.now()};
+  if (editingId) { const idx=phrases.findIndex(p=>p.id===editingId); phrases[idx]=data; } else phrases.unshift(data);
+  save(); document.getElementById('addModal').style.display='none'; showToast(editingId?'更新しました ☁':'追加しました ☁');
+}
+function deletePhrase(id) { if(!confirm('このフレーズを削除しますか？')) return; phrases=phrases.filter(p=>p.id!==id); save(); showToast('削除しました'); }
 
-function editCandidate(i, c) {
-  closePhotoModal();
-  openAddModal({
-    phrase: c.phrase,
-    category: c.category,
-    work: c.work || '',
-    author: c.author || '',
-    page: c.page || '',
-    tags: c.tags || '',
-    star: c.star || 0
-  });
+// ── PHOTO ──
+function openPhotoModal() { fabOpen=false; document.getElementById('fabMain').textContent='＋'; document.getElementById('fabRow1').classList.remove('show'); document.getElementById('fabRow2').classList.remove('show'); document.getElementById('photoModal').style.display='flex'; resetPhoto(); }
+function closePhotoModal(e) { if(e&&e.target!==document.getElementById('photoModal')) return; document.getElementById('photoModal').style.display='none'; resetPhoto(); }
+function resetPhoto() { document.getElementById('photoStep1').style.display='block'; document.getElementById('photoStep2').style.display='none'; document.getElementById('photoStep3').style.display='none'; document.getElementById('photoFile').value=''; selections=[]; currentPhotoFile=null; }
+function onPhotoSelected(e) { const file=e.target.files[0]; if(!file) return; currentPhotoFile=file; const reader=new FileReader(); reader.onload=ev=>{ const img=document.getElementById('photoPreview'); img.src=ev.target.result; img.onload=()=>{ document.getElementById('photoStep1').style.display='none'; document.getElementById('photoStep2').style.display='block'; setupCanvas(); }; }; reader.readAsDataURL(file); }
+function setupCanvas() { const img=document.getElementById('photoPreview'); const canvas=document.getElementById('selectionCanvas'); canvas.width=img.offsetWidth; canvas.height=img.offsetHeight; selections=[]; drawSelections(); canvas.addEventListener('mousedown',startSelect); canvas.addEventListener('mousemove',moveSelect); canvas.addEventListener('mouseup',endSelect); canvas.addEventListener('touchstart',startSelect,{passive:false}); canvas.addEventListener('touchmove',moveSelect,{passive:false}); canvas.addEventListener('touchend',endSelect,{passive:false}); }
+function getPos(e,canvas) { const rect=canvas.getBoundingClientRect(); const scaleX=canvas.width/rect.width,scaleY=canvas.height/rect.height; const clientX=e.touches?e.touches[0].clientX:e.clientX; const clientY=e.touches?e.touches[0].clientY:e.clientY; return {x:(clientX-rect.left)*scaleX,y:(clientY-rect.top)*scaleY}; }
+function startSelect(e) { e.preventDefault(); const p=getPos(e,document.getElementById('selectionCanvas')); isDragging=true; startX=p.x; startY=p.y; endX=p.x; endY=p.y; }
+function moveSelect(e) { e.preventDefault(); if(!isDragging) return; const p=getPos(e,document.getElementById('selectionCanvas')); endX=p.x; endY=p.y; drawSelections(true); }
+function endSelect(e) { e.preventDefault(); if(!isDragging) return; isDragging=false; const w=Math.abs(endX-startX),h=Math.abs(endY-startY); if(w>10&&h>10) selections.push({x:Math.min(startX,endX),y:Math.min(startY,endY),w,h}); drawSelections(); }
+function drawSelections(withCurrent) { const canvas=document.getElementById('selectionCanvas'); const ctx=canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height); ctx.strokeStyle='rgba(139,105,20,0.8)'; ctx.fillStyle='rgba(196,152,58,0.15)'; ctx.lineWidth=2; selections.forEach(s=>{ ctx.beginPath(); ctx.rect(s.x,s.y,s.w,s.h); ctx.fill(); ctx.stroke(); }); if(withCurrent&&isDragging) { const x=Math.min(startX,endX),y=Math.min(startY,endY),w=Math.abs(endX-startX),h=Math.abs(endY-startY); ctx.setLineDash([5,3]); ctx.beginPath(); ctx.rect(x,y,w,h); ctx.fill(); ctx.stroke(); ctx.setLineDash([]); } }
+async function analyzePhoto() {
+  if (!currentPhotoFile) return;
+  showLoading('AIが読み取り中...');
+  try {
+    const base64=await fileToBase64(currentPhotoFile);
+    const prompt=`この本のページ画像から文学的に最も印象深いフレーズを5つ抽出してください。\n以下のJSON配列のみ返してください（他のテキスト不要）：\n[{"phrase":"","category":"心情描写|情景描写|セリフ|場面説明|行動描写|人物説明|その他","star":1-5,"tags":"","work":"","author":"","page":""}]`;
+    const response=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-opus-4-5',max_tokens:2000,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:currentPhotoFile.type,data:base64}},{type:'text',text:prompt}]}]})});
+    const data=await response.json();
+    if (!response.ok) throw new Error(data.error?.message||'読み取りに失敗しました');
+    const text=data.content[0]?.text||'';
+    const jsonMatch=text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) throw new Error('結果を解析できませんでした');
+    hideLoading(); showCandidates(JSON.parse(jsonMatch[0]));
+  } catch(err) { hideLoading(); showToast('❌ '+(err.message||'読み取りに失敗しました')); }
 }
+function showCandidates(candidates) {
+  document.getElementById('photoStep2').style.display='none'; document.getElementById('photoStep3').style.display='block';
+  document.getElementById('candidatesList').innerHTML=candidates.map((c,i)=>{
+    const stars=c.star?'★'.repeat(c.star)+'☆'.repeat(5-c.star):'';
+    return `<div class="candidate-card" id="cand_${i}"><div class="cand-phrase">${c.phrase}</div><div class="cand-meta"><span class="cat-badge">${CAT_ICONS[c.category]||''} ${c.category}</span>${stars?`<span class="stars">${stars}</span>`:''} ${c.page?`<span>📄 p.${c.page}</span>`:''}</div><div class="candidate-actions"><button class="btn-register" onclick='registerCandidate(${i},${JSON.stringify(c)})'>登録する</button><button class="btn-register" style="background:var(--sepia)" onclick='editCandidate(${i},${JSON.stringify(c)})'>編集して登録</button><button class="btn-skip" onclick="skipCandidate(${i})">スキップ</button></div></div>`;
+  }).join('');
+}
+function registerCandidate(i,c) { phrases.unshift({id:Date.now().toString()+i,phrase:c.phrase,category:c.category,work:c.work||'',author:c.author||'',page:c.page||'',tags:c.tags||'',star:c.star||0,memo:'',createdAt:Date.now()}); save(); document.getElementById('cand_'+i).style.opacity='.4'; document.getElementById('cand_'+i).querySelector('.candidate-actions').innerHTML='<span style="font-size:.8rem;color:var(--green)">✓ 登録済み ☁</span>'; showToast('登録しました'); }
+function editCandidate(i,c) { closePhotoModal(); openAddModal({phrase:c.phrase,category:c.category,work:c.work||'',author:c.author||'',page:c.page||'',tags:c.tags||'',star:c.star||0}); }
+function skipCandidate(i) { document.getElementById('cand_'+i).style.display='none'; }
+function fileToBase64(file) { return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=e=>res(e.target.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(file); }); }
 
-function skipCandidate(i) {
-  const el = document.getElementById('cand_' + i);
-  el.style.display = 'none';
-}
-
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = e => resolve(e.target.result.split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-function openSearch() {
-  const wrap = document.getElementById('searchBarWrap');
-  const visible = wrap.style.display !== 'none';
-  wrap.style.display = visible ? 'none' : 'block';
-  if (!visible) document.getElementById('searchInput').focus();
-  else { document.getElementById('searchInput').value = ''; renderCards(); }
-}
-
-function openSettings() {
-  document.getElementById('settingsApiKey').value = apiKey;
-  document.getElementById('settingsModal').style.display = 'flex';
-}
-
-function closeSettings(e) {
-  if (e && e.target !== document.getElementById('settingsModal')) return;
-  document.getElementById('settingsModal').style.display = 'none';
-}
-
-function updateApiKey() {
-  const key = document.getElementById('settingsApiKey').value.trim();
-  if (!key.startsWith('sk-ant-')) { showToast('APIキーはsk-ant-で始まります'); return; }
-  localStorage.setItem('phrase_api_key', key);
-  apiKey = key;
-  closeSettings();
-  showToast('APIキーを更新しました');
-}
-
-function clearAll() {
-  if (!confirm('全データを削除します。元に戻せません。よいですか？')) return;
-  phrases = [];
-  localStorage.removeItem('phrase_db');
-  save();
-  closeSettings();
-  showToast('全データを削除しました');
-}
-
-function showLoading(text) {
-  document.getElementById('loadingText').textContent = text;
-  document.getElementById('loadingOverlay').style.display = 'flex';
-}
-
-function hideLoading() {
-  document.getElementById('loadingOverlay').style.display = 'none';
-}
-
-function showToast(msg) {
-  const t = document.createElement('div');
-  t.className = 'toast'; t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 2500);
-}
+function openSearch() { const wrap=document.getElementById('searchBarWrap'); const visible=wrap.style.display!=='none'; wrap.style.display=visible?'none':'block'; if(!visible) document.getElementById('searchInput').focus(); else { document.getElementById('searchInput').value=''; renderCards(); } }
+function openSettings() { document.getElementById('settingsApiKey').value=apiKey; document.getElementById('settingsModal').style.display='flex'; }
+function closeSettings(e) { if(e&&e.target!==document.getElementById('settingsModal')) return; document.getElementById('settingsModal').style.display='none'; }
+function updateApiKey() { const key=document.getElementById('settingsApiKey').value.trim(); if(!key.startsWith('sk-ant-')) { showToast('APIキーはsk-ant-で始まります'); return; } localStorage.setItem('phrase_api_key',key); apiKey=key; closeSettings(); showToast('APIキーを更新しました'); }
+function clearAll() { if(!confirm('全データを削除します。元に戻せません。よいですか？')) return; phrases=[]; localStorage.removeItem('phrase_db'); save(); closeSettings(); showToast('全データを削除しました'); }
+function showLoading(text) { document.getElementById('loadingText').textContent=text; document.getElementById('loadingOverlay').style.display='flex'; }
+function hideLoading() { document.getElementById('loadingOverlay').style.display='none'; }
+function showToast(msg) { const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2500); }
 </script>
 </body>
 </html>
