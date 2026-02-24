@@ -177,6 +177,44 @@
     font-weight: 700;
   }
 
+  .filter-tabs-wrap {
+    display: flex; align-items: center;
+    background: white;
+    border-bottom: 1px solid var(--aged);
+    padding: 0.2rem 0.5rem;
+    min-height: 36px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .filter-tabs-wrap::-webkit-scrollbar { display: none; }
+
+  .filter-label {
+    font-size: 0.68rem; color: var(--sepia);
+    white-space: nowrap; padding-right: 0.4rem;
+    font-weight: 700; flex-shrink: 0;
+    letter-spacing: 0.03em;
+  }
+
+  .filter-chip {
+    padding: 0.25rem 0.65rem; white-space: nowrap;
+    font-size: 0.72rem; cursor: pointer;
+    color: var(--sepia); transition: all 0.15s;
+    font-family: 'Noto Serif JP', serif;
+    font-weight: 500; flex-shrink: 0;
+    border-radius: 12px; margin: 0.1rem;
+    border: 1px solid var(--aged);
+    background: var(--paper);
+  }
+
+  .filter-chip.active {
+    background: var(--sepia-dark);
+    color: var(--paper);
+    border-color: var(--sepia-dark);
+    font-weight: 700;
+  }
+
   /* Search */
   .search-bar {
     padding: 0.8rem 1rem;
@@ -616,6 +654,10 @@
   </header>
 
   <div class="cat-tabs" id="catTabs"></div>
+  <div class="filter-tabs-wrap">
+    <div class="filter-label">絞り込み：</div>
+    <div class="cat-tabs filter-tabs" id="filterTabs"></div>
+  </div>
 
   <div id="searchBarWrap" style="display:none">
     <div class="search-bar">
@@ -778,6 +820,8 @@ const CAT_ICONS = { 'すべて':'📚','心情描写':'💭','情景描写':'�
 
 let phrases = [];
 let currentCat = 'すべて';
+let currentFilter = 'すべて'; // work or author filter
+let currentFilterType = 'work'; // 'work' or 'author'
 let editingId = null;
 let currentStar = 0;
 let fabOpen = false;
@@ -814,6 +858,7 @@ function showApp() {
   document.getElementById('apiScreen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   renderTabs();
+  renderFilterTabs();
   renderCards();
 }
 
@@ -829,7 +874,37 @@ function renderTabs() {
 
 function selectCat(cat) {
   currentCat = cat;
+  currentFilter = 'すべて';
   renderTabs();
+  renderFilterTabs();
+  renderCards();
+}
+
+function renderFilterTabs() {
+  const wrap = document.getElementById('filterTabs');
+
+  // Collect unique works and authors from current category
+  let pool = currentCat === 'すべて' ? phrases : phrases.filter(p => p.category === currentCat);
+  const works = [...new Set(pool.map(p => p.work).filter(Boolean))];
+  const authors = [...new Set(pool.map(p => p.author).filter(Boolean))];
+
+  if (works.length === 0 && authors.length === 0) {
+    wrap.parentElement.style.display = 'none';
+    return;
+  }
+  wrap.parentElement.style.display = 'flex';
+
+  const allChip = `<span class="filter-chip ${currentFilter === 'すべて' ? 'active' : ''}" onclick="selectFilter('すべて','')">すべて</span>`;
+  const workChips = works.map(w => `<span class="filter-chip ${currentFilter === w && currentFilterType === 'work' ? 'active' : ''}" onclick="selectFilter('${w}','work')">📖 ${w}</span>`).join('');
+  const authorChips = authors.map(a => `<span class="filter-chip ${currentFilter === a && currentFilterType === 'author' ? 'active' : ''}" onclick="selectFilter('${a}','author')">✍️ ${a}</span>`).join('');
+
+  wrap.innerHTML = allChip + workChips + authorChips;
+}
+
+function selectFilter(value, type) {
+  currentFilter = value;
+  currentFilterType = type;
+  renderFilterTabs();
   renderCards();
 }
 
@@ -838,11 +913,16 @@ function renderCards() {
   let filtered = phrases;
 
   if (currentCat !== 'すべて') filtered = filtered.filter(p => p.category === currentCat);
+  if (currentFilter !== 'すべて') {
+    if (currentFilterType === 'work') filtered = filtered.filter(p => p.work === currentFilter);
+    if (currentFilterType === 'author') filtered = filtered.filter(p => p.author === currentFilter);
+  }
   if (search) {
     filtered = filtered.filter(p =>
       p.phrase.toLowerCase().includes(search) ||
       (p.author || '').toLowerCase().includes(search) ||
-      (p.tags || '').toLowerCase().includes(search)
+      (p.tags || '').toLowerCase().includes(search) ||
+      (p.work || '').toLowerCase().includes(search)
     );
   }
 
@@ -973,6 +1053,7 @@ function deletePhrase(id) {
 function save() {
   localStorage.setItem('phrase_db', JSON.stringify(phrases));
   renderTabs();
+  renderFilterTabs();
   renderCards();
 }
 
