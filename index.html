@@ -195,7 +195,7 @@
   <div class="modal" onclick="event.stopPropagation()">
     <h2>📷 写真で追加</h2>
     <div id="photoStep1"><div class="photo-area" onclick="document.getElementById('photoFile').click()"><div class="photo-icon">📸</div><p>タップして写真を選ぶ<br><small>本のページ・手書きメモなど</small></p></div><input type="file" id="photoFile" accept="image/*" style="display:none" onchange="onPhotoSelected(event)"></div>
-    <div id="photoStep2" style="display:none"><p class="selection-instruction">📌 気になる箇所を指でドラッグして四角く囲んでください<br>複数選択OK・囲まなければページ全体を全文読み取ります</p><div id="photoPreviewWrap"><img id="photoPreview" src="" alt="プレビュー"><canvas id="selectionCanvas"></canvas></div><div style="display:flex;gap:.7rem;margin-top:.8rem"><button class="btn-cancel" onclick="resetPhoto()">撮り直す</button><button class="btn-save" onclick="analyzePhoto()">AIに読み取らせる</button></div></div>
+    <div id="photoStep2" style="display:none"><p class="selection-instruction">📌 気になる箇所を指でドラッグして四角く囲んでください<br>複数選択OK・囲まなければページ全体を全文読み取ります</p><div id="photoPreviewWrap"><img id="photoPreview" src="" alt="プレビュー"><canvas id="selectionCanvas"></canvas></div><div style="display:flex;gap:.7rem;margin-top:.8rem;flex-wrap:wrap"><button class="btn-cancel" onclick="resetPhoto()">撮り直す</button><button class="btn-cancel" onclick="clearSelections()" id="clearSelBtn" style="display:none">囲みをリセット</button><button class="btn-save" onclick="analyzePhoto()">AIに読み取らせる</button></div></div>
     <div id="photoStep3" style="display:none"><p style="font-size:.8rem;color:var(--sepia);margin-bottom:.8rem;text-align:center">📚 AIが提案した候補です。登録したいものを選んでください</p><div class="candidates-list" id="candidatesList"></div><button class="btn-cancel" style="width:100%;margin-top:.8rem" onclick="closePhotoModal()">閉じる</button></div>
   </div>
 </div>
@@ -489,13 +489,18 @@ function deletePhrase(id) { if(!confirm('このフレーズを削除しますか
 // ── PHOTO ──
 function openPhotoModal() { fabOpen=false; document.getElementById('fabMain').textContent='＋'; document.getElementById('fabRow1').classList.remove('show'); document.getElementById('fabRow2').classList.remove('show'); document.getElementById('photoModal').style.display='flex'; resetPhoto(); }
 function closePhotoModal(e) { if(e&&e.target!==document.getElementById('photoModal')) return; document.getElementById('photoModal').style.display='none'; resetPhoto(); }
+function clearSelections() {
+  selections=[];
+  drawSelections();
+  document.getElementById('clearSelBtn').style.display='none';
+}
 function resetPhoto() { document.getElementById('photoStep1').style.display='block'; document.getElementById('photoStep2').style.display='none'; document.getElementById('photoStep3').style.display='none'; document.getElementById('photoFile').value=''; selections=[]; currentPhotoFile=null; }
 function onPhotoSelected(e) { const file=e.target.files[0]; if(!file) return; currentPhotoFile=file; const reader=new FileReader(); reader.onload=ev=>{ const img=document.getElementById('photoPreview'); img.src=ev.target.result; img.onload=()=>{ document.getElementById('photoStep1').style.display='none'; document.getElementById('photoStep2').style.display='block'; document.getElementById('photoPreviewWrap').style.display='block'; setupCanvas(); }; }; reader.readAsDataURL(file); }
 function setupCanvas() { const img=document.getElementById('photoPreview'); const canvas=document.getElementById('selectionCanvas'); canvas.width=img.offsetWidth; canvas.height=img.offsetHeight; selections=[]; drawSelections(); canvas.addEventListener('mousedown',startSelect); canvas.addEventListener('mousemove',moveSelect); canvas.addEventListener('mouseup',endSelect); canvas.addEventListener('touchstart',startSelect,{passive:false}); canvas.addEventListener('touchmove',moveSelect,{passive:false}); canvas.addEventListener('touchend',endSelect,{passive:false}); }
 function getPos(e,canvas) { const rect=canvas.getBoundingClientRect(); const scaleX=canvas.width/rect.width,scaleY=canvas.height/rect.height; const clientX=e.touches?e.touches[0].clientX:e.clientX; const clientY=e.touches?e.touches[0].clientY:e.clientY; return {x:(clientX-rect.left)*scaleX,y:(clientY-rect.top)*scaleY}; }
 function startSelect(e) { e.preventDefault(); const p=getPos(e,document.getElementById('selectionCanvas')); isDragging=true; startX=p.x; startY=p.y; endX=p.x; endY=p.y; }
 function moveSelect(e) { e.preventDefault(); if(!isDragging) return; const p=getPos(e,document.getElementById('selectionCanvas')); endX=p.x; endY=p.y; drawSelections(true); }
-function endSelect(e) { e.preventDefault(); if(!isDragging) return; isDragging=false; const w=Math.abs(endX-startX),h=Math.abs(endY-startY); if(w>10&&h>10) selections.push({x:Math.min(startX,endX),y:Math.min(startY,endY),w,h}); drawSelections(); }
+function endSelect(e) { e.preventDefault(); if(!isDragging) return; isDragging=false; const w=Math.abs(endX-startX),h=Math.abs(endY-startY); if(w>10&&h>10) { selections.push({x:Math.min(startX,endX),y:Math.min(startY,endY),w,h}); document.getElementById('clearSelBtn').style.display='block'; } drawSelections(); }
 function drawSelections(withCurrent) { const canvas=document.getElementById('selectionCanvas'); const ctx=canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height); ctx.strokeStyle='rgba(139,105,20,0.8)'; ctx.fillStyle='rgba(196,152,58,0.15)'; ctx.lineWidth=2; selections.forEach(s=>{ ctx.beginPath(); ctx.rect(s.x,s.y,s.w,s.h); ctx.fill(); ctx.stroke(); }); if(withCurrent&&isDragging) { const x=Math.min(startX,endX),y=Math.min(startY,endY),w=Math.abs(endX-startX),h=Math.abs(endY-startY); ctx.setLineDash([5,3]); ctx.beginPath(); ctx.rect(x,y,w,h); ctx.fill(); ctx.stroke(); ctx.setLineDash([]); } }
 async function analyzePhoto() {
   if (!currentPhotoFile) return;
@@ -520,7 +525,7 @@ async function analyzePhoto() {
       base64=await fileToBase64(currentPhotoFile); mimeType=currentPhotoFile.type;
     }
     const prompt = selections.length > 0
-      ? 'この画像は本から切り取られた箇所です。含まれる日本語テキストをすべて一字一句正確に読み取り、文・段落ごとに分割してください。要約・省略・選抜は絶対にしないでください。\n以下のJSON配列のみ返してください：\n[{"phrase":"","category":"心情描写|情景描写|セリフ|場面説明|行動描写|人物説明|その他","star":3,"tags":"","work":"","author":"","page":""}]'
+      ? 'この画像に含まれる日本語テキストを一字一句そのまま読み取ってください。改行や句読点もそのまま維持し、要約・分割・省略は一切しないでください。画像全体のテキストを1つのフレーズとして返してください。\n以下のJSON配列を1要素だけ返してください：\n[{"phrase":"（読み取ったテキストをそのまま）","category":"心情描写|情景描写|セリフ|場面説明|行動描写|人物説明|その他","star":3,"tags":"","work":"","author":"","page":""}]'
       : 'この本のページ画像に含まれるすべての日本語テキストを読み取り、文・段落ごとに分割してください。AIによる選抜・要約は不要です。\n以下のJSON配列のみ返してください：\n[{"phrase":"","category":"心情描写|情景描写|セリフ|場面説明|行動描写|人物説明|その他","star":1-5,"tags":"","work":"","author":"","page":""}]';
     const response=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:3000,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mimeType,data:base64}},{type:'text',text:prompt}]}]})});
     const data=await response.json();
