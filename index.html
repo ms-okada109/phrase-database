@@ -64,8 +64,8 @@
   .phrase-tags{display:flex;gap:.3rem;flex-wrap:wrap;}
   .tag{background:var(--aged);color:var(--sepia-dark);padding:.15rem .5rem;border-radius:10px;font-size:.7rem;font-weight:600;}
   .stars{color:#c4983a;font-size:.85rem;}
-  .card-actions{position:absolute;top:.7rem;right:.7rem;display:flex;gap:.3rem;}
-  .card-btn{background:none;border:none;font-size:1rem;cursor:pointer;padding:.2rem;opacity:.5;transition:opacity .2s;}
+  .card-actions{display:flex;gap:.5rem;justify-content:flex-end;margin-top:.7rem;padding-top:.6rem;border-top:1px dashed var(--aged);}
+  .card-btn{background:var(--aged);border:1px solid var(--sepia-light);font-size:.78rem;cursor:pointer;padding:.3rem .7rem;border-radius:4px;color:var(--sepia-dark);font-family:'Noto Serif JP',serif;opacity:.8;transition:opacity .2s;}
   .card-btn:hover{opacity:1;}
   .phrase-memo{font-size:.78rem;color:var(--sepia);margin-top:.4rem;font-style:italic;line-height:1.6;padding-top:.4rem;border-top:1px dashed var(--aged);}
   .cat-badge{background:var(--sepia-dark);color:var(--paper);padding:.1rem .5rem;border-radius:10px;font-size:.68rem;font-weight:600;}
@@ -195,7 +195,7 @@
   <div class="modal" onclick="event.stopPropagation()">
     <h2>📷 写真で追加</h2>
     <div id="photoStep1"><div class="photo-area" onclick="document.getElementById('photoFile').click()"><div class="photo-icon">📸</div><p>タップして写真を選ぶ<br><small>本のページ・手書きメモなど</small></p></div><input type="file" id="photoFile" accept="image/*" style="display:none" onchange="onPhotoSelected(event)"></div>
-    <div id="photoStep2" style="display:none"><p class="selection-instruction">📌 気になる箇所をドラッグして四角く囲んでください<br>囲まなければページ全体から5候補を提案します</p><div id="photoPreviewWrap"><img id="photoPreview" src="" alt="プレビュー"><canvas id="selectionCanvas"></canvas></div><div style="display:flex;gap:.7rem;margin-top:.8rem"><button class="btn-cancel" onclick="resetPhoto()">撮り直す</button><button class="btn-save" onclick="analyzePhoto()">AIに読み取らせる</button></div></div>
+    <div id="photoStep2" style="display:none"><p class="selection-instruction">📌 気になる箇所を指でドラッグして四角く囲んでください<br>複数選択OK・囲まなければページ全体を全文読み取ります</p><div id="photoPreviewWrap"><img id="photoPreview" src="" alt="プレビュー"><canvas id="selectionCanvas"></canvas></div><div style="display:flex;gap:.7rem;margin-top:.8rem"><button class="btn-cancel" onclick="resetPhoto()">撮り直す</button><button class="btn-save" onclick="analyzePhoto()">AIに読み取らせる</button></div></div>
     <div id="photoStep3" style="display:none"><p style="font-size:.8rem;color:var(--sepia);margin-bottom:.8rem;text-align:center">📚 AIが提案した候補です。登録したいものを選んでください</p><div class="candidates-list" id="candidatesList"></div><button class="btn-cancel" style="width:100%;margin-top:.8rem" onclick="closePhotoModal()">閉じる</button></div>
   </div>
 </div>
@@ -432,11 +432,11 @@ function renderCards() {
     const tags=p.tags?p.tags.split(',').map(t=>`<span class="tag">${t.trim()}</span>`).join(''):'';
     const source=[p.work,p.author].filter(Boolean).join(' / ');
     return `<div class="phrase-card">
-      <div class="card-actions"><button class="card-btn" onclick="editPhrase('${p.id}')">✏️</button><button class="card-btn" onclick="deletePhrase('${p.id}')">🗑️</button></div>
       <div class="phrase-text">${p.phrase}</div>
       <div class="phrase-meta"><span class="cat-badge">${CAT_ICONS[p.category]||''} ${p.category}</span>${source?`<span class="phrase-source">『${source}』</span>`:''} ${p.page?`<span style="font-size:.72rem;color:var(--sepia)">📄 p.${p.page}</span>`:''} ${stars?`<span class="stars">${stars}</span>`:''}</div>
       ${tags?`<div class="phrase-tags">${tags}</div>`:''}
       ${p.memo?`<div class="phrase-memo">📝 ${p.memo}</div>`:''}
+      <div class="card-actions"><button class="card-btn" onclick="editPhrase('${p.id}')">✏️ 編集</button><button class="card-btn" style="color:var(--red)" onclick="deletePhrase('${p.id}')">🗑️ 削除</button></div>
     </div>`;
   }).join('');
 }
@@ -520,6 +520,32 @@ function openSettings() { document.getElementById('settingsApiKey').value=apiKey
 function closeSettings(e) { if(e&&e.target!==document.getElementById('settingsModal')) return; document.getElementById('settingsModal').style.display='none'; }
 function updateApiKey() { const key=document.getElementById('settingsApiKey').value.trim(); if(!key.startsWith('sk-ant-')) { showToast('APIキーはsk-ant-で始まります'); return; } localStorage.setItem('phrase_api_key',key); apiKey=key; closeSettings(); showToast('APIキーを更新しました'); }
 function clearAll() { if(!confirm('全データを削除します。元に戻せません。よいですか？')) return; phrases=[]; localStorage.removeItem('phrase_db'); save(); closeSettings(); showToast('全データを削除しました'); }
+function exportData() {
+  const d=new Date();
+  const blob=new Blob([JSON.stringify({version:1,exportedAt:d.toISOString(),phrases},null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.download=`フレーズ蒐集帖_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`;
+  a.href=url; a.click(); URL.revokeObjectURL(url); showToast('書き出しました');
+}
+function importData(e) {
+  const file=e.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      const imported=data.phrases||data;
+      if(!Array.isArray(imported))throw new Error();
+      if(!confirm(`${imported.length}件のフレーズを読み込みます。現在のデータに追加されます。よろしいですか？`))return;
+      const existingIds=new Set(phrases.map(p=>p.id));
+      const newItems=imported.filter(p=>!existingIds.has(p.id));
+      phrases=[...newItems,...phrases];
+      save(); showToast(`${newItems.length}件を追加しました`);
+    }catch{showToast('ファイルの形式が正しくありません');}
+    e.target.value='';
+  };
+  reader.readAsText(file);
+}
 function showLoading(text) { document.getElementById('loadingText').textContent=text; document.getElementById('loadingOverlay').style.display='flex'; }
 function hideLoading() { document.getElementById('loadingOverlay').style.display='none'; }
 function showToast(msg) { const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2500); }
