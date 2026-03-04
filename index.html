@@ -214,7 +214,6 @@
       <p style="font-size:.72rem;color:var(--sepia);margin-top:.5rem;line-height:1.7">書き出したJSONをGoogleドライブに保存しておくと安全です</p>
     </div>
     <div class="form-actions" style="margin-top:1rem"><button class="btn-cancel" onclick="closeSettings()">閉じる</button><button class="btn-save" onclick="updateApiKey()">更新する</button></div>
-    <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--aged);text-align:center"><button onclick="clearAll()" style="background:none;border:none;color:var(--red);font-size:.8rem;cursor:pointer;font-family:'Noto Serif JP',serif">全データを削除する</button></div>
   </div>
 </div>
 
@@ -521,7 +520,7 @@ async function analyzePhoto() {
       base64=await fileToBase64(currentPhotoFile); mimeType=currentPhotoFile.type;
     }
     const prompt = selections.length > 0
-      ? 'この画像は本から選択された箇所です。含まれる日本語テキストをすべて正確に読み取り、文・段落ごとに分割してください。AIによる選抜や要約は不要です。\n以下のJSON配列のみ返してください：\n[{"phrase":"","category":"心情描写|情景描写|セリフ|場面説明|行動描写|人物説明|その他","star":1-5,"tags":"","work":"","author":"","page":""}]'
+      ? 'この画像は本から切り取られた箇所です。含まれる日本語テキストをすべて一字一句正確に読み取り、文・段落ごとに分割してください。要約・省略・選抜は絶対にしないでください。\n以下のJSON配列のみ返してください：\n[{"phrase":"","category":"心情描写|情景描写|セリフ|場面説明|行動描写|人物説明|その他","star":3,"tags":"","work":"","author":"","page":""}]'
       : 'この本のページ画像に含まれるすべての日本語テキストを読み取り、文・段落ごとに分割してください。AIによる選抜・要約は不要です。\n以下のJSON配列のみ返してください：\n[{"phrase":"","category":"心情描写|情景描写|セリフ|場面説明|行動描写|人物説明|その他","star":1-5,"tags":"","work":"","author":"","page":""}]';
     const response=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:3000,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mimeType,data:base64}},{type:'text',text:prompt}]}]})});
     const data=await response.json();
