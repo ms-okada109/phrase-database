@@ -135,6 +135,17 @@
   .settings-item{padding:1rem 0;border-bottom:1px solid var(--aged);}
   .settings-item label{display:block;font-size:.8rem;color:var(--sepia);margin-bottom:.4rem;font-weight:600;}
   .settings-item input{width:100%;padding:.6rem;border:1px solid var(--aged);border-radius:4px;font-size:.85rem;font-family:monospace;background:white;color:var(--ink);}
+
+  /* ランダム表示モード */
+  #randomMode{position:fixed;inset:0;z-index:900;background:var(--sepia-dark);display:none;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;}
+  #randomMode .r-phrase{font-family:'Shippori Mincho',serif;font-size:1.1rem;line-height:2.2;color:var(--paper);text-align:center;font-weight:500;margin-bottom:1.5rem;flex:1;display:flex;align-items:center;justify-content:center;white-space:pre-wrap;}
+  #randomMode .r-meta{font-size:.78rem;color:rgba(245,240,232,.7);text-align:center;margin-bottom:.5rem;font-style:italic;}
+  #randomMode .r-stars{color:#c4983a;font-size:.9rem;margin-bottom:1.5rem;text-align:center;}
+  #randomMode .r-btns{display:flex;gap:1rem;width:100%;}
+  #randomMode .r-btn{flex:1;padding:.9rem;border:1px solid rgba(245,240,232,.3);border-radius:8px;background:rgba(245,240,232,.1);color:var(--paper);font-family:'Noto Serif JP',serif;font-size:.85rem;cursor:pointer;text-align:center;}
+  #randomMode .r-btn:active{background:rgba(245,240,232,.25);}
+  #randomMode .r-close{position:absolute;top:1.2rem;right:1.2rem;font-size:1.2rem;background:none;border:none;color:rgba(245,240,232,.6);cursor:pointer;padding:.5rem;}
+  #randomMode .r-count{position:absolute;top:1.3rem;left:1.2rem;font-size:.72rem;color:rgba(245,240,232,.4);font-family:'Noto Serif JP',serif;}
 </style>
 </head>
 <body>
@@ -156,7 +167,7 @@
     <h1>📖 フレーズ蒐集帖</h1>
     <div class="header-actions">
       <span id="gist-badge" onclick="openGistModal()">☁ 未設定</span>
-      <button class="icon-btn" onclick="openSearch()">🔍</button>
+      <button class="icon-btn" onclick="openRandomMode()">🎲</button><button class="icon-btn" onclick="openSearch()">🔍</button>
       <button class="icon-btn" onclick="openSettings()">⚙️</button>
     </div>
   </header>
@@ -169,6 +180,20 @@
     <div class="fab-row" id="fabRow1"><span class="fab-label">手動で追加</span><button class="fab fab-sub" onclick="openAddModal()">✏️</button></div>
     <div class="fab-row" id="fabRow2"><span class="fab-label">写真で追加</span><button class="fab fab-sub" onclick="openPhotoModal()">📷</button></div>
     <button class="fab fab-main" id="fabMain" onclick="toggleFab()">＋</button>
+  </div>
+</div>
+
+
+<!-- Random Mode -->
+<div id="randomMode">
+  <button class="r-close" onclick="closeRandomMode()">✕</button>
+  <div class="r-count" id="rCount"></div>
+  <div class="r-phrase" id="rPhrase"></div>
+  <div class="r-meta" id="rMeta"></div>
+  <div class="r-stars" id="rStars"></div>
+  <div class="r-btns">
+    <button class="r-btn" onclick="prevRandom()">◀ 前へ</button>
+    <button class="r-btn" onclick="nextRandom()">次へ ▶</button>
   </div>
 </div>
 
@@ -581,6 +606,27 @@ function importData(e) {
 }
 function showLoading(text) { document.getElementById('loadingText').textContent=text; document.getElementById('loadingOverlay').style.display='flex'; }
 function hideLoading() { document.getElementById('loadingOverlay').style.display='none'; }
+
+// ── RANDOM MODE ──
+let randomList=[], randomIndex=0;
+function openRandomMode() {
+  if (!phrases.length) { showToast('フレーズがまだありません'); return; }
+  randomList=[...phrases].sort(()=>Math.random()-.5);
+  randomIndex=0;
+  showRandomPhrase();
+  document.getElementById('randomMode').style.display='flex';
+}
+function closeRandomMode() { document.getElementById('randomMode').style.display='none'; }
+function showRandomPhrase() {
+  const p=randomList[randomIndex];
+  document.getElementById('rPhrase').textContent=p.phrase;
+  const src=[p.work,p.author].filter(Boolean).join(' ／ ');
+  document.getElementById('rMeta').textContent=src?`── ${src}`:'';
+  document.getElementById('rStars').textContent=p.star?'★'.repeat(p.star)+'☆'.repeat(5-p.star):'';
+  document.getElementById('rCount').textContent=`${randomIndex+1} / ${randomList.length}`;
+}
+function nextRandom() { randomIndex=(randomIndex+1)%randomList.length; showRandomPhrase(); }
+function prevRandom() { randomIndex=(randomIndex-1+randomList.length)%randomList.length; showRandomPhrase(); }
 function showToast(msg) { const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2500); }
 </script>
 </body>
