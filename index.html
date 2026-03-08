@@ -137,8 +137,8 @@
   .settings-item input{width:100%;padding:.6rem;border:1px solid var(--aged);border-radius:4px;font-size:.85rem;font-family:monospace;background:white;color:var(--ink);}
 
   /* ランダム表示モード */
-  #randomMode{position:fixed;inset:0;z-index:900;background:var(--sepia-dark);display:none;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;}
-  #randomMode .r-phrase{font-family:'Shippori Mincho',serif;font-size:1.1rem;line-height:2.2;color:var(--paper);text-align:center;font-weight:500;margin-bottom:1.5rem;flex:1;display:flex;align-items:center;justify-content:center;white-space:pre-wrap;}
+  #randomMode{position:fixed;inset:0;z-index:1000;background:var(--sepia-dark);flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;}
+  #randomMode .r-phrase{font-family:'Shippori Mincho',serif;font-size:1.1rem;line-height:2.2;color:var(--paper);text-align:center;font-weight:500;margin-bottom:1.5rem;flex:1;display:flex;align-items:center;justify-content:center;white-space:pre-wrap;word-break:break-all;}
   #randomMode .r-meta{font-size:.78rem;color:rgba(245,240,232,.7);text-align:center;margin-bottom:.5rem;font-style:italic;}
   #randomMode .r-stars{color:#c4983a;font-size:.9rem;margin-bottom:1.5rem;text-align:center;}
   #randomMode .r-btns{display:flex;gap:1rem;width:100%;}
@@ -180,20 +180,6 @@
     <div class="fab-row" id="fabRow1"><span class="fab-label">手動で追加</span><button class="fab fab-sub" onclick="openAddModal()">✏️</button></div>
     <div class="fab-row" id="fabRow2"><span class="fab-label">写真で追加</span><button class="fab fab-sub" onclick="openPhotoModal()">📷</button></div>
     <button class="fab fab-main" id="fabMain" onclick="toggleFab()">＋</button>
-  </div>
-</div>
-
-
-<!-- Random Mode -->
-<div id="randomMode">
-  <button class="r-close" onclick="closeRandomMode()">✕</button>
-  <div class="r-count" id="rCount"></div>
-  <div class="r-phrase" id="rPhrase"></div>
-  <div class="r-meta" id="rMeta"></div>
-  <div class="r-stars" id="rStars"></div>
-  <div class="r-btns">
-    <button class="r-btn" onclick="prevRandom()">◀ 前へ</button>
-    <button class="r-btn" onclick="nextRandom()">次へ ▶</button>
   </div>
 </div>
 
@@ -606,7 +592,6 @@ function importData(e) {
 }
 function showLoading(text) { document.getElementById('loadingText').textContent=text; document.getElementById('loadingOverlay').style.display='flex'; }
 function hideLoading() { document.getElementById('loadingOverlay').style.display='none'; }
-
 // ── RANDOM MODE ──
 let randomList=[], randomIndex=0;
 function openRandomMode() {
@@ -629,5 +614,17 @@ function nextRandom() { randomIndex=(randomIndex+1)%randomList.length; showRando
 function prevRandom() { randomIndex=(randomIndex-1+randomList.length)%randomList.length; showRandomPhrase(); }
 function showToast(msg) { const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2500); }
 </script>
+
+<div id="randomMode" style="display:none">
+  <button class="r-close" onclick="closeRandomMode()">✕</button>
+  <div class="r-count" id="rCount"></div>
+  <div class="r-phrase" id="rPhrase"></div>
+  <div class="r-meta" id="rMeta"></div>
+  <div class="r-stars" id="rStars"></div>
+  <div class="r-btns">
+    <button class="r-btn" onclick="prevRandom()">◀ 前へ</button>
+    <button class="r-btn" onclick="nextRandom()">次へ ▶</button>
+  </div>
+</div>
 </body>
 </html>
