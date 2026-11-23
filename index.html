@@ -279,6 +279,7 @@
   <div class="rv-top">
     <strong id="rdTitle" style="font-family:'Shippori Mincho',serif;letter-spacing:.1em;margin-right:.4rem">縦書きで読む</strong>
     <label class="icon-btn" style="cursor:pointer">📂 本文を開く<input type="file" accept=".txt,text/plain" hidden onchange="onReaderFile(event)"></label>
+    <select id="rdEnc" title="読み込むファイルの文字コード"><option value="auto">文字コード：自動</option><option value="utf-8">UTF-8</option><option value="shift_jis">Shift_JIS</option><option value="euc-jp">EUC-JP</option></select>
     <select id="rdSaved" onchange="rdLoadSaved(this)" style="max-width:9rem"><option value="">保存済み</option></select>
     <button class="icon-btn" onclick="rdDeleteSaved()" title="保存済みの本文を削除">🗑</button>
     <select id="rdToc" onchange="rdJump(this)"><option value="">章へ移動</option></select>
@@ -746,8 +747,9 @@ function closeReader(){
 }
 
 // 文字コード判定：UTF-8として不正ならShift_JIS（青空文庫の多くはこちら）として読む
-function decodeText(buf){
+function decodeText(buf, enc){
   const bytes = new Uint8Array(buf);
+  if (enc && enc !== 'auto') return new TextDecoder(enc).decode(bytes);
   try { return new TextDecoder('utf-8', {fatal: true}).decode(bytes); }
   catch (e) { return new TextDecoder('shift_jis').decode(bytes); }
 }
@@ -830,7 +832,7 @@ function onReaderFile(e){
   const r = new FileReader();
   r.onload = async ev => {
     try {
-      const d = parseAozora(decodeText(ev.target.result), f.name);
+      const d = parseAozora(decodeText(ev.target.result, document.getElementById('rdEnc').value), f.name);
       if (!d.paras.length) throw new Error('no text');
       rdApply(d);
       try {
