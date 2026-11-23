@@ -159,6 +159,39 @@
   #rdScroll mark.rg{background:#eedb9e;border-radius:2px;}
   #rdTip{position:fixed;z-index:450;display:none;background:var(--ink);color:var(--paper);border-radius:8px;padding:.35rem .5rem;font-size:.78rem;box-shadow:0 4px 14px rgba(0,0,0,.25);}
   #rdTip button{background:transparent;border:1px solid var(--paper);color:var(--paper);padding:.25rem .6rem;border-radius:5px;font-family:'Noto Serif JP',serif;cursor:pointer;}
+  /* 線引き・メモ（本文に直接つける印） */
+  #rdBody{flex:1;min-height:0;display:flex;}
+  #rdBody > #rdScroll{flex:1;min-width:0;}
+  #rdScroll mark.pen{background:none;cursor:pointer;color:inherit;}
+  #rdScroll mark.hl-y{background:#ffe27a;} #rdScroll mark.hl-g{background:#b9e6a8;}
+  #rdScroll mark.hl-b{background:#a9d4f5;} #rdScroll mark.hl-p{background:#f6b6c8;}
+  #rdScroll mark.pen.noted{box-shadow:inset 0 0 0 1px rgba(92,68,8,.5);}
+  #rdScroll mark.rg{background:none;cursor:pointer;color:inherit;outline:1px dotted #8b6914;outline-offset:2px;}
+  #rdScroll .flash{outline:2px solid #7a5c3a;outline-offset:2px;}
+  .rd-sw{display:inline-block;width:18px;height:18px;border-radius:50%;border:2px solid var(--paper);cursor:pointer;}
+  #rdTip{align-items:center;gap:.35rem;}
+  #rdPanel{width:360px;flex:none;border-left:1px solid var(--aged);background:var(--paper);overflow-y:auto;font-family:'Noto Serif JP',serif;font-size:.8rem;}
+  #rdPanel[hidden]{display:none!important;}
+  .rp-head{display:flex;align-items:center;gap:.5rem;padding:.6rem .8rem;border-bottom:1px solid var(--aged);position:sticky;top:0;background:var(--paper);z-index:1;}
+  .rp-head button{padding:.25rem .5rem;border:1px solid var(--sepia-light);border-radius:4px;background:#fff;color:var(--sepia-dark);font-size:.72rem;cursor:pointer;}
+  .rp-empty{padding:1rem;color:var(--sepia);}
+  details.rp-ch{border-bottom:1px solid var(--aged);padding:.4rem .8rem;}
+  details.rp-ch summary{cursor:pointer;color:var(--sepia-dark);font-weight:600;padding:.3rem 0;}
+  .rp-cnt{margin-left:.4rem;font-weight:400;color:var(--sepia);font-size:.72rem;}
+  .rp-sum{display:block;width:100%;min-height:4rem;margin:.3rem 0 .5rem;padding:.4rem .5rem;border:1px solid var(--aged);border-radius:4px;background:#fff;font-family:inherit;font-size:.78rem;line-height:1.6;resize:vertical;color:var(--ink);}
+  .rp-item{border-left:4px solid var(--c,#999);background:#fff;border-radius:4px;padding:.4rem .5rem;margin-bottom:.4rem;}
+  .rp-q{line-height:1.7;white-space:pre-wrap;word-break:break-all;}
+  .rp-note{margin-top:.3rem;padding:.3rem .4rem;background:#faf7f0;border-radius:4px;white-space:pre-wrap;line-height:1.6;color:var(--sepia-dark);}
+  .rp-acts{display:flex;gap:.3rem;margin-top:.3rem;}
+  .rp-acts button{padding:.15rem .4rem;font-size:.7rem;border:1px solid var(--aged);border-radius:4px;background:var(--paper);cursor:pointer;}
+  #rmkDlg{border:none;border-radius:12px;padding:1.1rem 1.2rem;width:min(480px,92vw);background:var(--paper);color:var(--ink);font-family:'Noto Serif JP',serif;box-shadow:0 12px 40px rgba(0,0,0,.3);}
+  #rmkDlg::backdrop{background:rgba(26,18,9,.4);}
+  #rmkDlg label{display:block;font-size:.8rem;color:var(--sepia-dark);margin:.5rem 0;}
+  #rmkDlg select,#rmkDlg textarea{display:block;width:100%;margin-top:.25rem;padding:.4rem;border:1px solid var(--aged);border-radius:4px;background:#fff;font-family:inherit;color:var(--ink);}
+  #rmkDlg .rmk-row{display:flex;gap:.5rem;align-items:center;margin-top:.8rem;}
+  #rmkDlg button{padding:.4rem .8rem;border:1px solid var(--sepia-light);border-radius:5px;background:#fff;cursor:pointer;font-family:inherit;}
+  #rmkOk{background:var(--sepia-dark)!important;color:var(--paper)!important;border-color:var(--sepia-dark)!important;}
+  #rmkDel{color:var(--red);}
 </style>
 </head>
 <body>
@@ -286,11 +319,31 @@
     <button class="icon-btn" onclick="rdFs(-1)">A−</button><button class="icon-btn" onclick="rdFs(1)">A＋</button>
     <span style="flex:1"></span>
     <span id="rdProg">0%</span>
+    <button class="icon-btn" onclick="rdTogglePanel()">📝 メモ・まとめ</button>
     <button class="icon-btn" onclick="closeReader()">✕ 閉じる</button>
   </div>
   <div id="rdEmpty"><div class="empty-state"><div class="empty-icon">📖</div><p>青空文庫形式のテキスト（.txt）を開くと、縦書きで読めます。<br>読みながら本文を選択して「＋ フレーズとして登録」を押すと、ほかのフレーズと同じように保存・同期・書き出しされます。<br><small>本文はブラウザ内で読み込まれるだけで、保存はされません。</small></p></div></div>
-  <div id="rdScroll" style="display:none"><div id="rdText"></div></div>
-  <div id="rdTip"><button id="rdTipReg">＋ フレーズとして登録</button></div>
+  <div id="rdBody" style="display:none">
+    <div id="rdScroll" style="display:none"><div id="rdText"></div></div>
+    <aside id="rdPanel" hidden>
+      <div class="rp-head"><strong>メモ・まとめ</strong><span style="flex:1"></span><button onclick="rmkExportMd()">Markdownで書き出し</button></div>
+      <div id="rdPanelBody"></div>
+    </aside>
+  </div>
+  <div id="rdTip">
+    <span class="rd-sw" data-c="y" title="黄" style="background:#ffe27a"></span><span class="rd-sw" data-c="g" title="緑" style="background:#b9e6a8"></span><span class="rd-sw" data-c="b" title="青" style="background:#a9d4f5"></span><span class="rd-sw" data-c="p" title="桃" style="background:#f6b6c8"></span>
+    <button id="rdTipStyle">蛍光</button>
+    <button id="rdTipNote">✎ メモ</button>
+    <button id="rdTipReg">＋ 登録</button>
+  </div>
+  <dialog id="rmkDlg">
+    <h3 style="font-family:'Shippori Mincho',serif;color:var(--sepia-dark);margin:0 0 .6rem">線引き・メモ</h3>
+    <blockquote id="rmkQuote" style="margin:0 0 .8rem;padding:.5rem .7rem;border-left:4px solid var(--sepia-light);background:#faf7f0;white-space:pre-wrap;max-height:140px;overflow:auto;font-size:.85rem;line-height:1.7"></blockquote>
+    <label>色 <select id="rmkColor"><option value="y">黄</option><option value="g">緑</option><option value="b">青</option><option value="p">桃</option></select></label>
+    <label>スタイル <select id="rmkStyle"><option value="hl">蛍光ペン</option><option value="ul">線引き</option></select></label>
+    <label>メモ <textarea id="rmkNote" rows="6" placeholder="気になった理由、使いどころ、感想など"></textarea></label>
+    <div class="rmk-row"><button id="rmkDel" type="button">削除</button><span style="flex:1"></span><button id="rmkCancel" type="button">キャンセル</button><button id="rmkOk" type="button">保存</button></div>
+  </dialog>
 </div>
 
 <div id="loadingOverlay" class="loading-overlay" style="display:none"><div class="loading-spinner"></div><div class="loading-text" id="loadingText">AIが読み取り中...</div></div>
@@ -683,28 +736,39 @@ function rdChapterOf(pi){
 }
 
 // 段落の描画。登録済みフレーズは色付きで示す
+// 段落の描画：線引き（pen）と登録フレーズ（rg）を重ねて表示する
 function rdHTML(pi){
   const t = RD.paras[pi][1];
-  const spans = [];
-  phrases.forEach(ph => {
-    if (!ph.phrase) return;
-    if (ph.work && RD.title && ph.work !== RD.title) return;
-    let i = t.indexOf(ph.phrase);
-    while (i >= 0 && spans.length < 500){
-      spans.push({s:i, e:i + ph.phrase.length, id:ph.id});
-      i = t.indexOf(ph.phrase, i + ph.phrase.length);
+  const ph = [];
+  phrases.forEach(p => {
+    if (!p.phrase) return;
+    if (p.work && RD.title && p.work !== RD.title) return;
+    let i = t.indexOf(p.phrase);
+    while (i >= 0 && ph.length < 500){
+      ph.push({s:i, e:i + p.phrase.length, id:p.id});
+      i = t.indexOf(p.phrase, i + p.phrase.length);
     }
   });
-  if (!spans.length) return rdEsc(t);
+  // 本文と一致しない線引きは表示しない（文字化けなどで位置がずれるのを防ぐ）
+  const pens = rmkMarks().filter(m => m.pi === pi && m.e > m.s && t.slice(m.s, m.e) === m.text);
+  if (!ph.length && !pens.length) return rdEsc(t);
   const cuts = new Set([0, t.length]);
-  spans.forEach(x => { cuts.add(x.s); cuts.add(x.e); });
+  [...ph, ...pens].forEach(x => { cuts.add(x.s); cuts.add(x.e); });
   const pts = [...cuts].sort((a,b) => a - b);
   let html = '';
   for (let j = 0; j < pts.length - 1; j++){
     const a = pts[j], b = pts[j+1];
-    const seg = rdEsc(t.slice(a, b));
-    const cov = spans.filter(x => x.s <= a && x.e >= b);
-    html += cov.length ? `<mark class="rg" data-pid="${cov[cov.length-1].id}">${seg}</mark>` : seg;
+    let inner = rdEsc(t.slice(a, b));
+    const pc = pens.filter(x => x.s <= a && x.e >= b);
+    if (pc.length){
+      const m = pc[pc.length - 1];
+      const ul = m.style === 'ul';
+      const st = ul ? ` style="text-decoration:underline;text-decoration-color:${PEN_DARK[m.color] || '#8b6914'};text-decoration-thickness:2px;text-underline-offset:.25em"` : '';
+      inner = `<mark class="pen ${ul ? 'ul' : 'hl-' + m.color}${m.note ? ' noted' : ''}" data-mid="${m.id}"${st}>${inner}</mark>`;
+    }
+    const hc = ph.filter(x => x.s <= a && x.e >= b);
+    if (hc.length) inner = `<mark class="rg" data-pid="${hc[hc.length - 1].id}">${inner}</mark>`;
+    html += inner;
   }
   return html;
 }
@@ -792,10 +856,30 @@ const RDB = {
   }
 };
 
+// 保存先：IndexedDBが使えない環境ではlocalStorageに保存する
+const RD_LS_KEY = 'phrase_reader_texts';
+function lsTexts(){ try { return JSON.parse(localStorage.getItem(RD_LS_KEY) || '[]'); } catch (e) { return []; } }
+async function txtPut(rec){
+  try { await RDB.put(rec); }
+  catch (e) {
+    const rest = lsTexts().filter(x => x.name !== rec.name);
+    rest.push(rec);
+    localStorage.setItem(RD_LS_KEY, JSON.stringify(rest));   // 容量超過などはここで例外になる
+  }
+}
+async function txtAll(){
+  let idb = [];
+  try { idb = await RDB.all(); } catch (e) {}
+  return [...idb, ...lsTexts().filter(x => !idb.some(y => y.name === x.name))];
+}
+async function txtDel(name){
+  try { await RDB.del(name); } catch (e) {}
+  localStorage.setItem(RD_LS_KEY, JSON.stringify(lsTexts().filter(x => x.name !== name)));
+}
+
 async function refreshSavedList(){
   const sel = document.getElementById('rdSaved');
-  let list = [];
-  try { list = await RDB.all(); } catch (e) {}
+  let list = await txtAll();
   sel.innerHTML = `<option value="">保存済み（${list.length}件）</option>` +
     list.map(r => `<option value="${rdEsc(r.name)}">${rdEsc(r.name)}</option>`).join('');
 }
@@ -805,12 +889,14 @@ function rdApply(d){
   document.getElementById('rdTitle').textContent = d.title;
   document.getElementById('rdEmpty').style.display = 'none';
   document.getElementById('rdScroll').style.display = 'block';
+  document.getElementById('rdBody').style.display = 'flex';
   renderReader();
+  rmkRenderPanel();
 }
 
 async function rdLoadSaved(sel){
   if (!sel.value) return;
-  const list = await RDB.all();
+  const list = await txtAll();
   const r = list.find(x => x.name === sel.value);
   if (r){ rdApply(r); showToast(`『${r.name}』を開きました`); }
   sel.value = '';
@@ -821,7 +907,7 @@ async function rdDeleteSaved(){
   const sel = document.getElementById('rdSaved');
   if (!sel.value){ showToast('削除する本文を「保存済み」から選んでください'); return; }
   if (!confirm(`『${sel.value}』の保存を削除しますか？`)) return;
-  await RDB.del(sel.value);
+  await txtDel(sel.value);
   showToast('削除しました');
   refreshSavedList();
 }
@@ -836,7 +922,7 @@ function onReaderFile(e){
       if (!d.paras.length) throw new Error('no text');
       rdApply(d);
       try {
-        await RDB.put({name: d.title, title: d.title, author: d.author, paras: d.paras, savedAt: Date.now()});
+        await txtPut({name: d.title, title: d.title, author: d.author, paras: d.paras, savedAt: Date.now()});
         showToast(`『${d.title}』を読み込み、保存しました`);
       } catch (err) { showToast(`『${d.title}』は表示しましたが、保存できませんでした`); }
       refreshSavedList();
@@ -860,9 +946,16 @@ rdScroll.addEventListener('mouseup', () => setTimeout(() => {
   if (!s || s.isCollapsed || !s.rangeCount){ rdHideTip(); return; }
   const a = rdParaOf(s.anchorNode), b = rdParaOf(s.focusNode);
   if (!a || a !== b){ rdHideTip(); return; }          // 段落をまたぐ選択は対象外
-  const text = s.toString().replace(/^[\s　]+|[\s　]+$/g, '');
+  const raw = s.toString();
+  const text = raw.replace(/^[\s　]+|[\s　]+$/g, '');
   if (!text){ rdHideTip(); return; }
-  RD.pending = {pi: +a.dataset.pi, text};
+  const r0 = s.getRangeAt(0);
+  const pre = document.createRange();
+  pre.selectNodeContents(a);
+  pre.setEnd(r0.startContainer, r0.startOffset);
+  const lead = raw.length - raw.replace(/^[\s　]+/, '').length;
+  const st = pre.toString().length + lead;
+  RD.pending = {pi: +a.dataset.pi, s: st, e: st + text.length, text};
   const rect = s.getRangeAt(0).getBoundingClientRect();
   const tip = document.getElementById('rdTip');
   tip.style.display = 'flex';
@@ -878,6 +971,8 @@ document.getElementById('rdTipReg').addEventListener('click', () => {
                 page: rdChapterOf(pd.pi), tags: '', memo: '', star: 0});
 });
 rdScroll.addEventListener('click', e => {
+  const pm = e.target.closest('mark[data-mid]');
+  if (pm && getSelection().isCollapsed){ rmkOpen(pm.dataset.mid); return; }
   const m = e.target.closest('mark[data-pid]');
   if (!m || !getSelection().isCollapsed) return;
   editPhrase(m.dataset.pid);
@@ -897,6 +992,172 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowLeft') rdScroll.scrollLeft -= 240;
   if (e.key === 'ArrowRight') rdScroll.scrollLeft += 240;
 });
+// ── 線引き・メモ・章まとめ（登録フレーズとは別に、本文ごとに保存） ──
+const RMK_KEY = 'phrase_reader_marks_v1';
+const PEN_DARK = {y:'#c99a00', g:'#4f9a3a', b:'#3a7fc0', p:'#c2508a'};
+let RMK = rmkLoad();
+let rmkEditId = null, rmkDraft = null;
+RD.penStyle = 'hl';
+
+function rmkLoad(){ try { return JSON.parse(localStorage.getItem(RMK_KEY) || '{}'); } catch (e) { return {}; } }
+function rmkSave(){
+  try { localStorage.setItem(RMK_KEY, JSON.stringify(RMK)); }
+  catch (e) { alert('保存容量を超えました。不要な線引きやメモを削除してください。'); }
+}
+function rmkBook(){ return RMK[RD.title] || (RMK[RD.title] = {marks: [], summaries: {}}); }
+function rmkMarks(){ return (RMK[RD.title] && RMK[RD.title].marks) || []; }
+function rdChapterPi(pi){
+  for (let i = pi; i >= 0; i--) if (RD.paras[i][0] === 'M') return i;
+  return -1;
+}
+function rmkChapters(){
+  const heads = [];
+  RD.paras.forEach((p, i) => { if (p[0] === 'M') heads.push({pi: i, name: p[1]}); });
+  return [{pi: -1, name: '（冒頭）'}, ...heads];
+}
+function rmkAdd(d, color, style, note){
+  rmkBook().marks.push({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    pi: d.pi, s: d.s, e: d.e, text: d.text, color, style: style || 'hl',
+    note: note || '', chPi: rdChapterPi(d.pi), t: Date.now()
+  });
+  rmkSave();
+  refreshReaderMarks();
+  rmkRenderPanel();
+}
+
+function rmkOpen(id, draft){
+  const m = id ? rmkMarks().find(x => x.id === id) : null;
+  const src = m || draft;
+  if (!src) return;
+  rmkEditId = m ? m.id : null;
+  rmkDraft = m ? null : draft;
+  document.getElementById('rmkQuote').textContent = src.text;
+  document.getElementById('rmkColor').value = src.color || 'y';
+  document.getElementById('rmkStyle').value = src.style || 'hl';
+  document.getElementById('rmkNote').value = m ? (m.note || '') : '';
+  document.getElementById('rmkDel').hidden = !m;
+  document.getElementById('rmkDlg').showModal();
+  document.getElementById('rmkNote').focus();
+}
+document.getElementById('rmkCancel').onclick = () => document.getElementById('rmkDlg').close();
+document.getElementById('rmkOk').onclick = () => {
+  const color = document.getElementById('rmkColor').value;
+  const style = document.getElementById('rmkStyle').value;
+  const note = document.getElementById('rmkNote').value.trim();
+  if (rmkEditId){
+    const m = rmkMarks().find(x => x.id === rmkEditId);
+    if (m){ m.color = color; m.style = style; m.note = note; rmkSave(); }
+    refreshReaderMarks();
+    rmkRenderPanel();
+  } else if (rmkDraft){
+    rmkAdd(rmkDraft, color, style, note);
+  }
+  document.getElementById('rmkDlg').close();
+};
+document.getElementById('rmkDel').onclick = () => {
+  if (!rmkEditId || !confirm('この線引き・メモを削除しますか？')) return;
+  const b = rmkBook();
+  b.marks = b.marks.filter(x => x.id !== rmkEditId);
+  rmkSave();
+  document.getElementById('rmkDlg').close();
+  refreshReaderMarks();
+  rmkRenderPanel();
+};
+
+// 選択後のツールバー：色で線引き／メモ付き／登録フレーズ
+document.querySelectorAll('#rdTip .rd-sw').forEach(btn => btn.addEventListener('click', () => {
+  const pd = RD.pending;
+  rdHideTip();
+  getSelection().removeAllRanges();
+  if (pd) rmkAdd(pd, btn.dataset.c, RD.penStyle, '');
+}));
+document.getElementById('rdTipNote').addEventListener('click', () => {
+  const pd = RD.pending;
+  rdHideTip();
+  getSelection().removeAllRanges();
+  if (pd) rmkOpen(null, {...pd, color: 'y', style: RD.penStyle});
+});
+document.getElementById('rdTipStyle').addEventListener('click', e => {
+  RD.penStyle = RD.penStyle === 'hl' ? 'ul' : 'hl';
+  e.currentTarget.textContent = RD.penStyle === 'hl' ? '蛍光' : '線引き';
+});
+
+// 右側パネル：章ごとのまとめとメモ一覧
+function rmkJump(id){
+  const m = rmkMarks().find(x => x.id === id);
+  if (!m) return;
+  const el = document.querySelector(`#rdText mark[data-mid="${id}"]`) || document.querySelector(`#rdText > p[data-pi="${m.pi}"]`);
+  if (el) el.scrollIntoView({behavior: 'smooth', block: 'start', inline: 'nearest'});
+}
+function rmkRenderPanel(){
+  const box = document.getElementById('rdPanelBody');
+  if (!box) return;
+  if (!RD.paras.length){
+    box.innerHTML = '<p class="rp-empty">本文を開くと、章ごとのメモとまとめがここに表示されます。</p>';
+    return;
+  }
+  const bk = RMK[RD.title] || {marks: [], summaries: {}};
+  const marks = bk.marks.slice().sort((a, b) => a.pi - b.pi || a.s - b.s);
+  const html = rmkChapters().map(c => {
+    const ms = marks.filter(m => (m.chPi ?? rdChapterPi(m.pi)) === c.pi);
+    const sum = (bk.summaries || {})[c.pi] || '';
+    if (c.pi === -1 && !ms.length && !sum) return '';
+    return `<details class="rp-ch"${ms.length || sum ? ' open' : ''}>
+      <summary>${rdEsc(c.name)}<span class="rp-cnt">${ms.length}件</span></summary>
+      <textarea class="rp-sum" data-cpi="${c.pi}" placeholder="この章のまとめを書く">${rdEsc(sum)}</textarea>
+      ${ms.map(m => `<div class="rp-item" style="--c:${PEN_DARK[m.color] || '#999'}">
+        <div class="rp-q">${rdEsc(m.text)}</div>
+        ${m.note ? `<div class="rp-note">${rdEsc(m.note)}</div>` : ''}
+        <div class="rp-acts"><button data-jump="${m.id}">本文で見る</button><button data-edit="${m.id}">編集</button></div>
+      </div>`).join('')}
+    </details>`;
+  }).join('');
+  box.innerHTML = html || '<p class="rp-empty">まだ線引きやメモがありません。本文を選択して色を選ぶか、✎メモを押してください。</p>';
+}
+function rdTogglePanel(){
+  const p = document.getElementById('rdPanel');
+  p.hidden = !p.hidden;
+  if (!p.hidden) rmkRenderPanel();
+}
+const rdPanelBody = document.getElementById('rdPanelBody');
+rdPanelBody.addEventListener('change', e => {
+  if (!e.target.matches('textarea.rp-sum')) return;
+  const b = rmkBook();
+  b.summaries[e.target.dataset.cpi] = e.target.value;
+  rmkSave();
+});
+rdPanelBody.addEventListener('click', e => {
+  const j = e.target.closest('[data-jump]');
+  if (j){ rmkJump(j.dataset.jump); return; }
+  const ed = e.target.closest('[data-edit]');
+  if (ed) rmkOpen(ed.dataset.edit);
+});
+
+function rmkExportMd(){
+  if (!RD.paras.length) return;
+  const bk = RMK[RD.title] || {marks: [], summaries: {}};
+  const marks = bk.marks.slice().sort((a, b) => a.pi - b.pi || a.s - b.s);
+  let out = `# ${RD.title}：メモ・まとめ\n\n`;
+  rmkChapters().forEach(c => {
+    const ms = marks.filter(m => (m.chPi ?? rdChapterPi(m.pi)) === c.pi);
+    const sum = (bk.summaries || {})[c.pi] || '';
+    if (!ms.length && !sum) return;
+    out += `## ${c.name}\n\n`;
+    if (sum) out += sum.trim() + '\n\n';
+    ms.forEach(m => {
+      out += `- 「${m.text}」\n`;
+      if (m.note) out += `  - メモ：${m.note.replace(/\n/g, '\n    ')}\n`;
+    });
+    out += '\n';
+  });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([out], {type: 'text/markdown;charset=utf-8'}));
+  a.download = `${RD.title}_メモ.md`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+}
+
 function rdJump(sel){
   if (!sel.value) return;
   const el = document.querySelector(`#rdText > p[data-pi="${sel.value}"]`);
