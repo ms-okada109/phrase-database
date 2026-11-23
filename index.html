@@ -341,7 +341,7 @@
     </aside>
   </div>
   <div id="rdTip">
-    <span class="rd-sw" data-c="y" title="黄" style="background:#ffe27a"></span><span class="rd-sw" data-c="g" title="緑" style="background:#b9e6a8"></span><span class="rd-sw" data-c="b" title="青" style="background:#a9d4f5"></span><span class="rd-sw" data-c="p" title="桃" style="background:#f6b6c8"></span>
+    <span class="rd-sw" data-c="y" title="黄：技法" style="background:#ffe27a"></span><span class="rd-sw" data-c="b" title="青：描写" style="background:#a9d4f5"></span>
     <button id="rdTipStyle">蛍光</button>
     <button id="rdTipNote">✎ メモ</button>
     <button id="rdTipReg">＋ 登録</button>
@@ -1045,7 +1045,10 @@ const PEN_DARK = {y:'#c99a00', g:'#4f9a3a', b:'#3a7fc0', p:'#c2508a'};
 let RMK = rmkLoad();
 // 色の意味（凡例）。初期値は「青＝いい描写、黄＝優れた技法」。パネルで書き換えられる
 const LEG_KEY = 'phrase_reader_legend_v1';
-const LEG_DEFAULT = {y: '優れた技法', b: 'いい描写', g: 'いい言い回し', p: '心に残った'};
+// 色は「黄＝技法」「青＝描写」の2色に絞る。緑・桃は以前の印を消さないためだけに残す
+const LEG_DEFAULT = {y: '技法', b: '描写', g: '旧：その他', p: '旧：その他'};
+// 執筆中に引き出すための定番タグ（候補として表示される）
+const PRESET_TAGS = ['比喩表現', '人物描写', '心理描写', '技巧', 'キーセンテンス', '場面転換', '章の入り方・締め方'];
 const PEN_NAME = {y: '黄', g: '緑', b: '青', p: '桃'};
 const PEN_BG = {y: '#ffe27a', g: '#b9e6a8', b: '#a9d4f5', p: '#f6b6c8'};
 let RLEG = (() => {
@@ -1129,11 +1132,15 @@ function rmkOpen(id, draft){
   rmkEditId = m ? m.id : null;
   rmkDraft = m ? null : draft;
   document.getElementById('rmkQuote').textContent = src.text;
-  document.getElementById('rmkColor').value = src.color || 'y';
+  // 色の選択肢は「黄・青」に絞る（以前の緑・桃の印を編集するときだけ、その色を一時的に加える）
+  const cs = document.getElementById('rmkColor');
+  const cols = ['y', 'b'].concat(['g', 'p'].includes(src.color) ? [src.color] : []);
+  cs.innerHTML = cols.map(c => `<option value="${c}">${PEN_NAME[c]}：${rdEsc(RLEG[c])}</option>`).join('');
+  cs.value = src.color || 'y';
   document.getElementById('rmkStyle').value = src.style || 'hl';
   document.getElementById('rmkNote').value = m ? (m.note || '') : '';
   document.getElementById('rmkTags').value = m ? (m.tags || []).join(', ') : '';
-  document.getElementById('rmkTagList').innerHTML = [...new Set(rmkMarks().flatMap(x => x.tags || []))]
+  document.getElementById('rmkTagList').innerHTML = [...new Set([...PRESET_TAGS, ...rmkMarks().flatMap(x => x.tags || [])])]
     .map(t => `<option value="${rdEsc(t)}">`).join('');
   document.getElementById('rmkDel').hidden = !m;
   document.getElementById('rmkDlg').showModal();
@@ -1218,8 +1225,8 @@ function rmkRenderPanel(){
   }).join('');
   const allTags = [...new Set(rmkMarks().flatMap(m => m.tags || []))].sort();
   const f2 = RD.rpf;
-  const legend = `<div class="rp-legend"><div class="muted" style="font-size:.7rem;margin-bottom:.2rem">色の意味（変更できます）</div>${['y', 'b', 'g', 'p'].map(c =>
-    `<label class="rp-leg-row"><span class="rp-dot" style="background:${PEN_BG[c]}"></span>${PEN_NAME[c]}<input class="rp-leg" data-lc="${c}" value="${rdEsc(RLEG[c])}"></label>`).join('')}</div>`;
+  const legend = `<div class="rp-legend">${['y', 'b'].map(c =>
+    `<div class="rp-leg-row"><span class="rp-dot" style="background:${PEN_BG[c]}"></span>${PEN_NAME[c]}：${rdEsc(RLEG[c])}</div>`).join('')}</div>`;
   const filters = `<div class="rp-filters">${['y', 'b', 'g', 'p'].map(c =>
     `<span class="rp-chip${f2.color === c ? ' on' : ''}" data-fc="${c}">${PEN_NAME[c]}：${rdEsc(RLEG[c])}</span>`).join('')}${allTags.map(t =>
     `<span class="rp-chip${f2.tag === t ? ' on' : ''}" data-ft="${rdEsc(t)}">#${rdEsc(t)}</span>`).join('')}${(f2.color || f2.tag) ? '<span class="rp-chip" data-fc="">絞り込み解除</span>' : ''}</div>`;
