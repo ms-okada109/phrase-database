@@ -279,6 +279,8 @@
   <div class="rv-top">
     <strong id="rdTitle" style="font-family:'Shippori Mincho',serif;letter-spacing:.1em;margin-right:.4rem">縦書きで読む</strong>
     <label class="icon-btn" style="cursor:pointer">📂 本文を開く<input type="file" accept=".txt,text/plain" hidden onchange="onReaderFile(event)"></label>
+    <select id="rdSaved" onchange="rdLoadSaved(this)" style="max-width:9rem"><option value="">保存済み</option></select>
+    <button class="icon-btn" onclick="rdDeleteSaved()" title="保存済みの本文を削除">🗑</button>
     <select id="rdToc" onchange="rdJump(this)"><option value="">章へ移動</option></select>
     <button class="icon-btn" onclick="rdFs(-1)">A−</button><button class="icon-btn" onclick="rdFs(1)">A＋</button>
     <span style="flex:1"></span>
@@ -735,6 +737,7 @@ function openReader(){
   RD.open = true;
   document.getElementById('readerView').style.display = 'flex';
   if (RD.paras.length) refreshReaderMarks();
+  refreshSavedList();
 }
 function closeReader(){
   RD.open = false;
@@ -742,23 +745,103 @@ function closeReader(){
   rdHideTip();
 }
 
+// 文字コード判定：UTF-8として不正ならShift_JIS（青空文庫の多くはこちら）として読む
+function decodeText(buf){
+  const bytes = new Uint8Array(buf);
+  try { return new TextDecoder('utf-8', {fatal: true}).decode(bytes); }
+  catch (e) { return new TextDecoder('shift_jis').decode(bytes); }
+}
+
+// 読み込んだ本文の保存（IndexedDB。localStorageより大きなテキストを保持できる）
+const RDB = {
+  open(){
+    return new Promise((res, rej) => {
+      const r = indexedDB.open('phrase-reader', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('texts', {keyPath: 'name'});
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+  },
+  async put(rec){
+    const db = await this.open();
+    return new Promise((res, rej) => {
+      const tx = db.transaction('texts', 'readwrite');
+      tx.objectStore('texts').put(rec);
+      tx.oncomplete = () => res();
+      tx.onerror = () => rej(tx.error);
+    });
+  },
+  async all(){
+    const db = await this.open();
+    return new Promise((res, rej) => {
+      const q = db.transaction('texts').objectStore('texts').getAll();
+      q.onsuccess = () => res(q.result);
+      q.onerror = () => rej(q.error);
+    });
+  },
+  async del(name){
+    const db = await this.open();
+    return new Promise((res, rej) => {
+      const tx = db.transaction('texts', 'readwrite');
+      tx.objectStore('texts').delete(name);
+      tx.oncomplete = () => res();
+      tx.onerror = () => rej(tx.error);
+    });
+  }
+};
+
+async function refreshSavedList(){
+  const sel = document.getElementById('rdSaved');
+  let list = [];
+  try { list = await RDB.all(); } catch (e) {}
+  sel.innerHTML = `<option value="">保存済み（${list.length}件）</option>` +
+    list.map(r => `<option value="${rdEsc(r.name)}">${rdEsc(r.name)}</option>`).join('');
+}
+
+function rdApply(d){
+  RD.title = d.title; RD.author = d.author; RD.paras = d.paras;
+  document.getElementById('rdTitle').textContent = d.title;
+  document.getElementById('rdEmpty').style.display = 'none';
+  document.getElementById('rdScroll').style.display = 'block';
+  renderReader();
+}
+
+async function rdLoadSaved(sel){
+  if (!sel.value) return;
+  const list = await RDB.all();
+  const r = list.find(x => x.name === sel.value);
+  if (r){ rdApply(r); showToast(`『${r.name}』を開きました`); }
+  sel.value = '';
+  refreshSavedList();
+}
+
+async function rdDeleteSaved(){
+  const sel = document.getElementById('rdSaved');
+  if (!sel.value){ showToast('削除する本文を「保存済み」から選んでください'); return; }
+  if (!confirm(`『${sel.value}』の保存を削除しますか？`)) return;
+  await RDB.del(sel.value);
+  showToast('削除しました');
+  refreshSavedList();
+}
+
 function onReaderFile(e){
   const f = e.target.files[0];
   if (!f) return;
   const r = new FileReader();
-  r.onload = ev => {
+  r.onload = async ev => {
     try {
-      const d = parseAozora(String(ev.target.result), f.name);
-      RD.title = d.title; RD.author = d.author; RD.paras = d.paras;
-      document.getElementById('rdTitle').textContent = d.title;
-      document.getElementById('rdEmpty').style.display = 'none';
-      document.getElementById('rdScroll').style.display = 'block';
-      renderReader();
-      showToast(`『${d.title}』を読み込みました`);
+      const d = parseAozora(decodeText(ev.target.result), f.name);
+      if (!d.paras.length) throw new Error('no text');
+      rdApply(d);
+      try {
+        await RDB.put({name: d.title, title: d.title, author: d.author, paras: d.paras, savedAt: Date.now()});
+        showToast(`『${d.title}』を読み込み、保存しました`);
+      } catch (err) { showToast(`『${d.title}』は表示しましたが、保存できませんでした`); }
+      refreshSavedList();
     } catch (err) { showToast('読み込みに失敗しました'); }
     e.target.value = '';
   };
-  r.readAsText(f, 'UTF-8');
+  r.readAsArrayBuffer(f);
 }
 
 function rdHideTip(){
