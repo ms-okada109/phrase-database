@@ -146,6 +146,19 @@
   #randomMode .r-btn:active{background:rgba(245,240,232,.25);}
   #randomMode .r-close{position:absolute;top:1.2rem;right:1.2rem;font-size:1.2rem;background:none;border:none;color:rgba(245,240,232,.6);cursor:pointer;padding:.5rem;}
   #randomMode .r-count{position:absolute;top:1.3rem;left:1.2rem;font-size:.72rem;color:rgba(245,240,232,.4);font-family:'Noto Serif JP',serif;}
+
+  /* 縦書きリーダー */
+  #readerView{position:fixed;inset:0;z-index:400;background:var(--paper);display:none;flex-direction:column;}
+  .rv-top{display:flex;align-items:center;gap:.45rem;padding:.5rem .8rem;background:var(--sepia-dark);color:var(--paper);font-family:'Noto Serif JP',serif;font-size:.75rem;flex-wrap:wrap;}
+  .rv-top select{font-size:.75rem;padding:.2rem .3rem;border-radius:4px;max-width:10rem;font-family:'Noto Serif JP',serif;}
+  #rdEmpty{flex:1;display:flex;align-items:center;justify-content:center;}
+  #rdScroll{flex:1;min-height:0;overflow-x:auto;overflow-y:hidden;writing-mode:vertical-rl;text-orientation:mixed;padding:2rem 1.6rem;font-family:'Shippori Mincho','Noto Serif JP',serif;font-size:var(--rd-fs,17px);line-height:2.1;letter-spacing:.06em;color:var(--ink);}
+  #rdScroll p{margin:0 0 .9em;}
+  #rdScroll p.h{font-size:1.2em;font-weight:700;letter-spacing:.2em;margin:1.6em 0 .8em;}
+  #rdScroll mark{background:none;color:inherit;cursor:pointer;}
+  #rdScroll mark.rg{background:#eedb9e;border-radius:2px;}
+  #rdTip{position:fixed;z-index:450;display:none;background:var(--ink);color:var(--paper);border-radius:8px;padding:.35rem .5rem;font-size:.78rem;box-shadow:0 4px 14px rgba(0,0,0,.25);}
+  #rdTip button{background:transparent;border:1px solid var(--paper);color:var(--paper);padding:.25rem .6rem;border-radius:5px;font-family:'Noto Serif JP',serif;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -167,7 +180,7 @@
     <h1>📖 フレーズ蒐集帖</h1>
     <div class="header-actions">
       <span id="gist-badge" onclick="openGistModal()">☁ 未設定</span>
-      <button class="icon-btn" onclick="openRandomMode()">🎲</button><button class="icon-btn" onclick="openSearch()">🔍</button>
+      <button class="icon-btn" onclick="openReader()" title="縦書きで読む">📖</button><button class="icon-btn" onclick="openRandomMode()">🎲</button><button class="icon-btn" onclick="openSearch()">🔍</button>
       <button class="icon-btn" onclick="openSettings()">⚙️</button>
     </div>
   </header>
@@ -259,6 +272,22 @@
       <button class="btn-save" id="gist-connect-btn" onclick="setupGist()">接続する</button>
     </div>
   </div>
+</div>
+
+<!-- Vertical reader -->
+<div id="readerView">
+  <div class="rv-top">
+    <strong id="rdTitle" style="font-family:'Shippori Mincho',serif;letter-spacing:.1em;margin-right:.4rem">縦書きで読む</strong>
+    <label class="icon-btn" style="cursor:pointer">📂 本文を開く<input type="file" accept=".txt,text/plain" hidden onchange="onReaderFile(event)"></label>
+    <select id="rdToc" onchange="rdJump(this)"><option value="">章へ移動</option></select>
+    <button class="icon-btn" onclick="rdFs(-1)">A−</button><button class="icon-btn" onclick="rdFs(1)">A＋</button>
+    <span style="flex:1"></span>
+    <span id="rdProg">0%</span>
+    <button class="icon-btn" onclick="closeReader()">✕ 閉じる</button>
+  </div>
+  <div id="rdEmpty"><div class="empty-state"><div class="empty-icon">📖</div><p>青空文庫形式のテキスト（.txt）を開くと、縦書きで読めます。<br>読みながら本文を選択して「＋ フレーズとして登録」を押すと、ほかのフレーズと同じように保存・同期・書き出しされます。<br><small>本文はブラウザ内で読み込まれるだけで、保存はされません。</small></p></div></div>
+  <div id="rdScroll" style="display:none"><div id="rdText"></div></div>
+  <div id="rdTip"><button id="rdTipReg">＋ フレーズとして登録</button></div>
 </div>
 
 <div id="loadingOverlay" class="loading-overlay" style="display:none"><div class="loading-spinner"></div><div class="loading-text" id="loadingText">AIが読み取り中...</div></div>
@@ -414,6 +443,7 @@ function save() {
   localStorage.setItem('phrase_db', JSON.stringify(phrases));
   if (gistToken && gistId) pushToGist().then(ok => { if (!ok) showToast('⚠ Gist同期失敗（ローカルには保存済）'); });
   renderTabs(); renderFilterTabs(); renderCards();
+  if (RD.open) refreshReaderMarks();
 }
 
 // ── RENDER ──
@@ -612,6 +642,188 @@ function showRandomPhrase() {
 }
 function nextRandom() { randomIndex=(randomIndex+1)%randomList.length; showRandomPhrase(); }
 function prevRandom() { randomIndex=(randomIndex-1+randomList.length)%randomList.length; showRandomPhrase(); }
+// ── VERTICAL READER ──
+const RD = {title:'', author:'', paras:[], open:false, pending:null};
+const rdEsc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// 青空文庫形式のテキストを、ルビ・注記を除いて段落配列にする
+function parseAozora(text, fileName){
+  const lines = text.replace(/\r/g,'').split('\n');
+  let title = fileName.replace(/\.txt$/i,''), author = '', start = 0;
+  const dash = [];
+  lines.forEach((l,i) => { if (l.startsWith('-----')) dash.push(i); });
+  if (dash.length >= 2){ title = lines[0].trim() || title; author = (lines[1]||'').trim(); start = dash[1] + 1; }
+  let body = lines.slice(start);
+  const colo = body.findIndex(l => l.startsWith('底本：'));
+  if (colo >= 0) body = body.slice(0, colo);
+  const paras = [];
+  const ANN = /［＃[^］]*］/g;
+  body.forEach(raw => {
+    if (!raw.trim()) return;
+    if (raw.includes('見出し］')){
+      const t = raw.replace(ANN,'').replace(/《[^》]*》/g,'').trim();
+      if (t) paras.push(['M', t]);
+      return;
+    }
+    const t = raw.replace(/《[^》]*》/g,'').replace(/｜/g,'')
+      .replace(/※?［＃「([^」]+)」、[^］]*］/g, (m,a) => '〔'+a+'〕')
+      .replace(/［＃「([^」]+)」に[^］]*］/g, (m,a) => a)
+      .replace(ANN,'').replace(/\s+$/,'');
+    if (t.trim()) paras.push(['P', t]);
+  });
+  return {title, author, paras};
+}
+
+function rdChapterOf(pi){
+  for (let i = pi; i >= 0; i--) if (RD.paras[i][0] === 'M') return RD.paras[i][1];
+  return '';
+}
+
+// 段落の描画。登録済みフレーズは色付きで示す
+function rdHTML(pi){
+  const t = RD.paras[pi][1];
+  const spans = [];
+  phrases.forEach(ph => {
+    if (!ph.phrase) return;
+    if (ph.work && RD.title && ph.work !== RD.title) return;
+    let i = t.indexOf(ph.phrase);
+    while (i >= 0 && spans.length < 500){
+      spans.push({s:i, e:i + ph.phrase.length, id:ph.id});
+      i = t.indexOf(ph.phrase, i + ph.phrase.length);
+    }
+  });
+  if (!spans.length) return rdEsc(t);
+  const cuts = new Set([0, t.length]);
+  spans.forEach(x => { cuts.add(x.s); cuts.add(x.e); });
+  const pts = [...cuts].sort((a,b) => a - b);
+  let html = '';
+  for (let j = 0; j < pts.length - 1; j++){
+    const a = pts[j], b = pts[j+1];
+    const seg = rdEsc(t.slice(a, b));
+    const cov = spans.filter(x => x.s <= a && x.e >= b);
+    html += cov.length ? `<mark class="rg" data-pid="${cov[cov.length-1].id}">${seg}</mark>` : seg;
+  }
+  return html;
+}
+
+function renderReader(){
+  const root = document.getElementById('rdText');
+  const frag = document.createDocumentFragment();
+  RD.paras.forEach((p, i) => {
+    const el = document.createElement('p');
+    if (p[0] === 'M') el.className = 'h';
+    el.dataset.pi = i;
+    el.innerHTML = rdHTML(i);
+    frag.appendChild(el);
+  });
+  root.innerHTML = '';
+  root.appendChild(frag);
+  document.getElementById('rdToc').innerHTML = '<option value="">章へ移動</option>' +
+    RD.paras.map((p, i) => p[0] === 'M' ? `<option value="${i}">${rdEsc(p[1])}</option>` : '').join('');
+  document.getElementById('rdScroll').scrollLeft = 0;
+}
+
+function refreshReaderMarks(){
+  if (!RD.paras.length) return;
+  const sc = document.getElementById('rdScroll');
+  const left = sc.scrollLeft;
+  document.querySelectorAll('#rdText > p').forEach(el => { el.innerHTML = rdHTML(+el.dataset.pi); });
+  sc.scrollLeft = left;
+}
+
+function openReader(){
+  RD.open = true;
+  document.getElementById('readerView').style.display = 'flex';
+  if (RD.paras.length) refreshReaderMarks();
+}
+function closeReader(){
+  RD.open = false;
+  document.getElementById('readerView').style.display = 'none';
+  rdHideTip();
+}
+
+function onReaderFile(e){
+  const f = e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      const d = parseAozora(String(ev.target.result), f.name);
+      RD.title = d.title; RD.author = d.author; RD.paras = d.paras;
+      document.getElementById('rdTitle').textContent = d.title;
+      document.getElementById('rdEmpty').style.display = 'none';
+      document.getElementById('rdScroll').style.display = 'block';
+      renderReader();
+      showToast(`『${d.title}』を読み込みました`);
+    } catch (err) { showToast('読み込みに失敗しました'); }
+    e.target.value = '';
+  };
+  r.readAsText(f, 'UTF-8');
+}
+
+function rdHideTip(){
+  document.getElementById('rdTip').style.display = 'none';
+  RD.pending = null;
+}
+function rdParaOf(node){
+  const n = node.nodeType === 3 ? node.parentNode : node;
+  return n && n.closest ? n.closest('#rdText > p') : null;
+}
+const rdScroll = document.getElementById('rdScroll');
+rdScroll.addEventListener('mouseup', () => setTimeout(() => {
+  const s = getSelection();
+  if (!s || s.isCollapsed || !s.rangeCount){ rdHideTip(); return; }
+  const a = rdParaOf(s.anchorNode), b = rdParaOf(s.focusNode);
+  if (!a || a !== b){ rdHideTip(); return; }          // 段落をまたぐ選択は対象外
+  const text = s.toString().replace(/^[\s　]+|[\s　]+$/g, '');
+  if (!text){ rdHideTip(); return; }
+  RD.pending = {pi: +a.dataset.pi, text};
+  const rect = s.getRangeAt(0).getBoundingClientRect();
+  const tip = document.getElementById('rdTip');
+  tip.style.display = 'flex';
+  tip.style.left = Math.max(8, rect.left + rect.width / 2 - 110) + 'px';
+  tip.style.top = Math.max(8, rect.top - 46) + 'px';
+}, 0));
+document.getElementById('rdTipReg').addEventListener('click', () => {
+  const pd = RD.pending;
+  rdHideTip();
+  getSelection().removeAllRanges();
+  if (!pd) return;
+  openAddModal({phrase: pd.text, category: 'その他', work: RD.title, author: RD.author,
+                page: rdChapterOf(pd.pi), tags: '', memo: '', star: 0});
+});
+rdScroll.addEventListener('click', e => {
+  const m = e.target.closest('mark[data-pid]');
+  if (!m || !getSelection().isCollapsed) return;
+  editPhrase(m.dataset.pid);
+});
+rdScroll.addEventListener('wheel', e => {
+  if (Math.abs(e.deltaY) >= Math.abs(e.deltaX)){
+    rdScroll.scrollLeft -= e.deltaY;   // 縦書きは右→左に進む
+    e.preventDefault();
+  }
+}, {passive:false});
+rdScroll.addEventListener('scroll', () => {
+  const max = rdScroll.scrollWidth - rdScroll.clientWidth;
+  document.getElementById('rdProg').textContent = (max > 0 ? Math.round(Math.abs(rdScroll.scrollLeft) / max * 100) : 0) + '%';
+}, {passive:true});
+document.addEventListener('keydown', e => {
+  if (!RD.open || (e.target.closest && e.target.closest('input,textarea,select,dialog'))) return;
+  if (e.key === 'ArrowLeft') rdScroll.scrollLeft -= 240;
+  if (e.key === 'ArrowRight') rdScroll.scrollLeft += 240;
+});
+function rdJump(sel){
+  if (!sel.value) return;
+  const el = document.querySelector(`#rdText > p[data-pi="${sel.value}"]`);
+  if (el) el.scrollIntoView({behavior:'smooth', block:'start', inline:'nearest'});
+  sel.value = '';
+}
+let rdFsSize = 17;
+function rdFs(d){
+  rdFsSize = Math.max(12, Math.min(30, rdFsSize + d));
+  rdScroll.style.setProperty('--rd-fs', rdFsSize + 'px');
+}
+
 function showToast(msg) { const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2500); }
 </script>
 
