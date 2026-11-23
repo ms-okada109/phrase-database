@@ -184,6 +184,16 @@
   .rp-note{margin-top:.3rem;padding:.3rem .4rem;background:#faf7f0;border-radius:4px;white-space:pre-wrap;line-height:1.6;color:var(--sepia-dark);}
   .rp-acts{display:flex;gap:.3rem;margin-top:.3rem;}
   .rp-acts button{padding:.15rem .4rem;font-size:.7rem;border:1px solid var(--aged);border-radius:4px;background:var(--paper);cursor:pointer;}
+  #rmkDlg input{display:block;width:100%;margin-top:.25rem;padding:.4rem;border:1px solid var(--aged);border-radius:4px;background:#fff;font-family:inherit;color:var(--ink);}
+  .rp-legend{padding:.5rem .8rem;border-bottom:1px solid var(--aged);}
+  .rp-leg-row{display:flex;align-items:center;gap:.4rem;margin:.25rem 0;font-size:.75rem;}
+  .rp-leg-row input{flex:1;padding:.2rem .35rem;border:1px solid var(--aged);border-radius:4px;background:#fff;font-family:inherit;font-size:.75rem;}
+  .rp-dot{width:14px;height:14px;border-radius:50%;flex:none;}
+  .rp-filters{padding:.5rem .8rem;border-bottom:1px solid var(--aged);line-height:2.2;}
+  .rp-chip{display:inline-block;padding:.1rem .5rem;border:1px solid var(--aged);border-radius:10px;margin:.1rem;cursor:pointer;font-size:.7rem;background:#fff;}
+  .rp-chip.on{background:var(--sepia-dark);color:var(--paper);}
+  .rp-meta{font-size:.7rem;color:var(--sepia);margin-bottom:.2rem;}
+  .rp-tag{color:#7a5c3a;}
   #rmkDlg{border:none;border-radius:12px;padding:1.1rem 1.2rem;width:min(480px,92vw);background:var(--paper);color:var(--ink);font-family:'Noto Serif JP',serif;box-shadow:0 12px 40px rgba(0,0,0,.3);}
   #rmkDlg::backdrop{background:rgba(26,18,9,.4);}
   #rmkDlg label{display:block;font-size:.8rem;color:var(--sepia-dark);margin:.5rem 0;}
@@ -341,6 +351,7 @@
     <blockquote id="rmkQuote" style="margin:0 0 .8rem;padding:.5rem .7rem;border-left:4px solid var(--sepia-light);background:#faf7f0;white-space:pre-wrap;max-height:140px;overflow:auto;font-size:.85rem;line-height:1.7"></blockquote>
     <label>色 <select id="rmkColor"><option value="y">黄</option><option value="g">緑</option><option value="b">青</option><option value="p">桃</option></select></label>
     <label>スタイル <select id="rmkStyle"><option value="hl">蛍光ペン</option><option value="ul">線引き</option></select></label>
+    <label>タグ（カンマ区切り）<input id="rmkTags" list="rmkTagList" placeholder="例：比喩, 倒置, 心理描写"><datalist id="rmkTagList"></datalist></label>
     <label>メモ <textarea id="rmkNote" rows="6" placeholder="気になった理由、使いどころ、感想など"></textarea></label>
     <div class="rmk-row"><button id="rmkDel" type="button">削除</button><span style="flex:1"></span><button id="rmkCancel" type="button">キャンセル</button><button id="rmkOk" type="button">保存</button></div>
   </dialog>
@@ -370,7 +381,7 @@ window.onload = async () => {
     showApp();
     if (gistToken && gistId) {
       const ok = await pullFromGist();
-      if (ok) { renderTabs(); renderCards(); showToast('☁ Gistから最新データを読み込みました'); }
+      if (ok) { renderTabs(); renderCards(); showToast('☁ Gistから最新データを読み込みました'); await pushToGist(); }
     }
   } else {
     document.getElementById('apiScreen').style.display = 'flex';
@@ -423,6 +434,7 @@ async function setupGist() {
     const ok = await pullFromGist();
     if (ok) {
       showToast('☁ Gistからデータを読み込みました！');
+      await pushToGist();   // この端末にだけある本文や線引きもGistへ送る
       document.getElementById('gistModal').style.display = 'none';
       renderTabs(); renderFilterTabs(); renderCards();
     } else { showToast('⚠ Gist IDが見つかりません。確認してください'); }
@@ -460,7 +472,7 @@ async function pushToGist() {
     const res = await fetch(`https://api.github.com/gists/${gistId}`, {
       method: 'PATCH',
       headers: { 'Authorization': `Bearer ${gistToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ files: { [GIST_FILENAME]: { content: JSON.stringify(phrases) } } })
+      body: JSON.stringify({ files: await gistFiles() })
     });
     return res.ok;
   } catch(e) { return false; }
@@ -478,6 +490,26 @@ async function pullFromGist() {
     if (!content) return false;
     phrases = JSON.parse(content);
     localStorage.setItem('phrase_db', JSON.stringify(phrases));
+    // 圧縮された本文を読み込み、この端末の保存済み本文に加える
+    for (const [name, f] of Object.entries(data.files || {})){
+      if (!name.startsWith('reader_text_')) continue;
+      try {
+        const b64 = f.truncated
+          ? await (await fetch(f.raw_url, {headers: {'Authorization': `Bearer ${gistToken}`}})).text()
+          : f.content;
+        const rec = JSON.parse(await gunzipB64(b64));
+        await txtPut({name: rec.title, title: rec.title, author: rec.author, paras: rec.paras, savedAt: Date.now()});
+      } catch (e) {}
+    }
+    // 線引き・メモ・色の意味づけも同じGistから読み込む
+    const rd = data.files?.[READER_FILENAME]?.content;
+    if (rd) {
+      try {
+        const x = JSON.parse(rd);
+        if (x.rmk) { RMK = x.rmk; localStorage.setItem(RMK_KEY, JSON.stringify(RMK)); }
+        if (x.legend) { RLEG = {...LEG_DEFAULT, ...x.legend}; localStorage.setItem(LEG_KEY, JSON.stringify(RLEG)); }
+      } catch (e) {}
+    }
     return true;
   } catch(e) { return false; }
 }
@@ -487,7 +519,7 @@ async function createGist() {
     const res = await fetch('https://api.github.com/gists', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${gistToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description:'フレーズ蒐集帖 データ', public:false, files:{ [GIST_FILENAME]:{ content:JSON.stringify(phrases) } } })
+      body: JSON.stringify({ description:'フレーズ蒐集帖 データ', public:false, files: await gistFiles() })
     });
     if (!res.ok) return null;
     return (await res.json()).id;
@@ -924,6 +956,7 @@ function onReaderFile(e){
       try {
         await txtPut({name: d.title, title: d.title, author: d.author, paras: d.paras, savedAt: Date.now()});
         showToast(`『${d.title}』を読み込み、保存しました`);
+        if (gistToken && gistId) pushToGist();
       } catch (err) { showToast(`『${d.title}』は表示しましたが、保存できませんでした`); }
       refreshSavedList();
     } catch (err) { showToast('読み込みに失敗しました'); }
@@ -996,13 +1029,62 @@ document.addEventListener('keydown', e => {
 const RMK_KEY = 'phrase_reader_marks_v1';
 const PEN_DARK = {y:'#c99a00', g:'#4f9a3a', b:'#3a7fc0', p:'#c2508a'};
 let RMK = rmkLoad();
+// 色の意味（凡例）。初期値は「青＝いい描写、黄＝優れた技法」。パネルで書き換えられる
+const LEG_KEY = 'phrase_reader_legend_v1';
+const LEG_DEFAULT = {y: '優れた技法', b: 'いい描写', g: 'いい言い回し', p: '心に残った'};
+const PEN_NAME = {y: '黄', g: '緑', b: '青', p: '桃'};
+const PEN_BG = {y: '#ffe27a', g: '#b9e6a8', b: '#a9d4f5', p: '#f6b6c8'};
+let RLEG = (() => {
+  try { return {...LEG_DEFAULT, ...JSON.parse(localStorage.getItem(LEG_KEY) || '{}')}; }
+  catch (e) { return {...LEG_DEFAULT}; }
+})();
+function rmkApplyLegend(){
+  document.querySelectorAll('#rdTip .rd-sw').forEach(b => { b.title = `${PEN_NAME[b.dataset.c]}：${RLEG[b.dataset.c]}`; });
+  document.querySelectorAll('#rmkColor option').forEach(o => { o.textContent = `${PEN_NAME[o.value]}：${RLEG[o.value]}`; });
+}
 let rmkEditId = null, rmkDraft = null;
 RD.penStyle = 'hl';
+RD.rpf = {color: '', tag: ''};   // パネルの絞り込み（色・タグ）
 
 function rmkLoad(){ try { return JSON.parse(localStorage.getItem(RMK_KEY) || '{}'); } catch (e) { return {}; } }
 function rmkSave(){
   try { localStorage.setItem(RMK_KEY, JSON.stringify(RMK)); }
   catch (e) { alert('保存容量を超えました。不要な線引きやメモを削除してください。'); }
+  if (gistToken && gistId) pushToGist();
+}
+// Gistに置くファイル：フレーズ＋線引き・メモ・色の意味づけ
+const READER_FILENAME = 'reader_marks.json';
+// 本文はgzipで圧縮し、base64にしてGistに入れる（1MBの本文が数百KBに縮む）
+async function gzipB64(str){
+  const stream = new Blob([str]).stream().pipeThrough(new CompressionStream('gzip'));
+  const bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+async function gunzipB64(b64){
+  const bin = atob(b64);
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+  return await new Response(stream).text();
+}
+// 本文ごとのファイル名（タイトルから決まるので、同じ本は同じファイルに上書きされる）
+function textFileName(title){
+  let h = 5381;
+  for (const c of title) h = ((h << 5) + h + c.charCodeAt(0)) | 0;
+  return 'reader_text_' + (h >>> 0).toString(16) + '.txt';
+}
+async function gistFiles(){
+  const files = {
+    [GIST_FILENAME]: {content: JSON.stringify(phrases)},
+    [READER_FILENAME]: {content: JSON.stringify({rmk: RMK, legend: RLEG})}
+  };
+  for (const t of await txtAll()){
+    files[textFileName(t.title)] = {
+      content: await gzipB64(JSON.stringify({title: t.title, author: t.author, paras: t.paras}))
+    };
+  }
+  return files;
 }
 function rmkBook(){ return RMK[RD.title] || (RMK[RD.title] = {marks: [], summaries: {}}); }
 function rmkMarks(){ return (RMK[RD.title] && RMK[RD.title].marks) || []; }
@@ -1015,11 +1097,11 @@ function rmkChapters(){
   RD.paras.forEach((p, i) => { if (p[0] === 'M') heads.push({pi: i, name: p[1]}); });
   return [{pi: -1, name: '（冒頭）'}, ...heads];
 }
-function rmkAdd(d, color, style, note){
+function rmkAdd(d, color, style, note, tags){
   rmkBook().marks.push({
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
     pi: d.pi, s: d.s, e: d.e, text: d.text, color, style: style || 'hl',
-    note: note || '', chPi: rdChapterPi(d.pi), t: Date.now()
+    note: note || '', tags: tags || [], chPi: rdChapterPi(d.pi), t: Date.now()
   });
   rmkSave();
   refreshReaderMarks();
@@ -1036,6 +1118,9 @@ function rmkOpen(id, draft){
   document.getElementById('rmkColor').value = src.color || 'y';
   document.getElementById('rmkStyle').value = src.style || 'hl';
   document.getElementById('rmkNote').value = m ? (m.note || '') : '';
+  document.getElementById('rmkTags').value = m ? (m.tags || []).join(', ') : '';
+  document.getElementById('rmkTagList').innerHTML = [...new Set(rmkMarks().flatMap(x => x.tags || []))]
+    .map(t => `<option value="${rdEsc(t)}">`).join('');
   document.getElementById('rmkDel').hidden = !m;
   document.getElementById('rmkDlg').showModal();
   document.getElementById('rmkNote').focus();
@@ -1045,13 +1130,14 @@ document.getElementById('rmkOk').onclick = () => {
   const color = document.getElementById('rmkColor').value;
   const style = document.getElementById('rmkStyle').value;
   const note = document.getElementById('rmkNote').value.trim();
+  const tags = document.getElementById('rmkTags').value.split(/[,、]/).map(s => s.trim()).filter(Boolean);
   if (rmkEditId){
     const m = rmkMarks().find(x => x.id === rmkEditId);
-    if (m){ m.color = color; m.style = style; m.note = note; rmkSave(); }
+    if (m){ m.color = color; m.style = style; m.note = note; m.tags = tags; rmkSave(); }
     refreshReaderMarks();
     rmkRenderPanel();
   } else if (rmkDraft){
-    rmkAdd(rmkDraft, color, style, note);
+    rmkAdd(rmkDraft, color, style, note, tags);
   }
   document.getElementById('rmkDlg').close();
 };
@@ -1098,7 +1184,9 @@ function rmkRenderPanel(){
     return;
   }
   const bk = RMK[RD.title] || {marks: [], summaries: {}};
-  const marks = bk.marks.slice().sort((a, b) => a.pi - b.pi || a.s - b.s);
+  const f = RD.rpf;
+  const marks = bk.marks.slice().sort((a, b) => a.pi - b.pi || a.s - b.s)
+    .filter(m => (!f.color || m.color === f.color) && (!f.tag || (m.tags || []).includes(f.tag)));
   const html = rmkChapters().map(c => {
     const ms = marks.filter(m => (m.chPi ?? rdChapterPi(m.pi)) === c.pi);
     const sum = (bk.summaries || {})[c.pi] || '';
@@ -1107,13 +1195,21 @@ function rmkRenderPanel(){
       <summary>${rdEsc(c.name)}<span class="rp-cnt">${ms.length}件</span></summary>
       <textarea class="rp-sum" data-cpi="${c.pi}" placeholder="この章のまとめを書く">${rdEsc(sum)}</textarea>
       ${ms.map(m => `<div class="rp-item" style="--c:${PEN_DARK[m.color] || '#999'}">
+        <div class="rp-meta">${PEN_NAME[m.color] || ''}：${rdEsc(RLEG[m.color] || '')}${(m.tags || []).map(t => ` <span class="rp-tag">#${rdEsc(t)}</span>`).join('')}</div>
         <div class="rp-q">${rdEsc(m.text)}</div>
         ${m.note ? `<div class="rp-note">${rdEsc(m.note)}</div>` : ''}
         <div class="rp-acts"><button data-jump="${m.id}">本文で見る</button><button data-edit="${m.id}">編集</button></div>
       </div>`).join('')}
     </details>`;
   }).join('');
-  box.innerHTML = html || '<p class="rp-empty">まだ線引きやメモがありません。本文を選択して色を選ぶか、✎メモを押してください。</p>';
+  const allTags = [...new Set(rmkMarks().flatMap(m => m.tags || []))].sort();
+  const f2 = RD.rpf;
+  const legend = `<div class="rp-legend"><div class="muted" style="font-size:.7rem;margin-bottom:.2rem">色の意味（変更できます）</div>${['y', 'b', 'g', 'p'].map(c =>
+    `<label class="rp-leg-row"><span class="rp-dot" style="background:${PEN_BG[c]}"></span>${PEN_NAME[c]}<input class="rp-leg" data-lc="${c}" value="${rdEsc(RLEG[c])}"></label>`).join('')}</div>`;
+  const filters = `<div class="rp-filters">${['y', 'b', 'g', 'p'].map(c =>
+    `<span class="rp-chip${f2.color === c ? ' on' : ''}" data-fc="${c}">${PEN_NAME[c]}：${rdEsc(RLEG[c])}</span>`).join('')}${allTags.map(t =>
+    `<span class="rp-chip${f2.tag === t ? ' on' : ''}" data-ft="${rdEsc(t)}">#${rdEsc(t)}</span>`).join('')}${(f2.color || f2.tag) ? '<span class="rp-chip" data-fc="">絞り込み解除</span>' : ''}</div>`;
+  box.innerHTML = legend + filters + (html || '<p class="rp-empty">該当する線引き・メモがありません。本文を選択して色を選ぶか、✎メモを押してください。</p>');
 }
 function rdTogglePanel(){
   const p = document.getElementById('rdPanel');
@@ -1121,13 +1217,34 @@ function rdTogglePanel(){
   if (!p.hidden) rmkRenderPanel();
 }
 const rdPanelBody = document.getElementById('rdPanelBody');
+rmkApplyLegend();
 rdPanelBody.addEventListener('change', e => {
+  if (e.target.matches('input.rp-leg')){
+    RLEG[e.target.dataset.lc] = e.target.value.trim() || LEG_DEFAULT[e.target.dataset.lc];
+    try { localStorage.setItem(LEG_KEY, JSON.stringify(RLEG)); } catch (err) {}
+    rmkApplyLegend();
+    rmkRenderPanel();
+    return;
+  }
   if (!e.target.matches('textarea.rp-sum')) return;
   const b = rmkBook();
   b.summaries[e.target.dataset.cpi] = e.target.value;
   rmkSave();
 });
 rdPanelBody.addEventListener('click', e => {
+  const fc = e.target.closest('[data-fc]');
+  if (fc){
+    if (fc.dataset.fc === '') RD.rpf = {color: '', tag: ''};
+    else RD.rpf.color = RD.rpf.color === fc.dataset.fc ? '' : fc.dataset.fc;
+    rmkRenderPanel();
+    return;
+  }
+  const ft = e.target.closest('[data-ft]');
+  if (ft){
+    RD.rpf.tag = RD.rpf.tag === ft.dataset.ft ? '' : ft.dataset.ft;
+    rmkRenderPanel();
+    return;
+  }
   const j = e.target.closest('[data-jump]');
   if (j){ rmkJump(j.dataset.jump); return; }
   const ed = e.target.closest('[data-edit]');
@@ -1147,6 +1264,8 @@ function rmkExportMd(){
     if (sum) out += sum.trim() + '\n\n';
     ms.forEach(m => {
       out += `- 「${m.text}」\n`;
+      out += `  - 色：${PEN_NAME[m.color] || ''}（${RLEG[m.color] || ''}）\n`;
+      if ((m.tags || []).length) out += `  - タグ：${m.tags.map(t => '#' + t).join(' ')}\n`;
       if (m.note) out += `  - メモ：${m.note.replace(/\n/g, '\n    ')}\n`;
     });
     out += '\n';
