@@ -974,9 +974,12 @@ function rdParaOf(node){
   return n && n.closest ? n.closest('#rdText > p') : null;
 }
 const rdScroll = document.getElementById('rdScroll');
-rdScroll.addEventListener('mouseup', () => setTimeout(() => {
+// 選択を読み取り、ツールバーを出す（PCのマウスとスマホの長押し・ハンドル操作の両方で呼ばれる）
+function rdOnSelect(){
+  if (!RD.open) return;
   const s = getSelection();
-  if (!s || s.isCollapsed || !s.rangeCount){ rdHideTip(); return; }
+  // 折りたたまれた時はツールバーを残す（タップ時に選択が消えても押せるように）
+  if (!s || s.isCollapsed || !s.rangeCount) return;
   const a = rdParaOf(s.anchorNode), b = rdParaOf(s.focusNode);
   if (!a || a !== b){ rdHideTip(); return; }          // 段落をまたぐ選択は対象外
   const raw = s.toString();
@@ -994,7 +997,18 @@ rdScroll.addEventListener('mouseup', () => setTimeout(() => {
   tip.style.display = 'flex';
   tip.style.left = Math.max(8, rect.left + rect.width / 2 - 110) + 'px';
   tip.style.top = Math.max(8, rect.top - 46) + 'px';
-}, 0));
+}
+rdScroll.addEventListener('mouseup', () => setTimeout(rdOnSelect, 0));
+rdScroll.addEventListener('touchend', () => setTimeout(rdOnSelect, 300));
+let rdSelTimer = null;
+document.addEventListener('selectionchange', () => {
+  clearTimeout(rdSelTimer);
+  rdSelTimer = setTimeout(rdOnSelect, 250);
+});
+// 本文を新しくタップしたら、古いツールバーを隠す
+rdScroll.addEventListener('pointerdown', () => { if (getSelection().isCollapsed) rdHideTip(); });
+// ツールバーを押しても選択が消えないようにする
+document.getElementById('rdTip').addEventListener('pointerdown', e => e.preventDefault());
 document.getElementById('rdTipReg').addEventListener('click', () => {
   const pd = RD.pending;
   rdHideTip();
