@@ -194,6 +194,25 @@
   .rp-chip.on{background:var(--sepia-dark);color:var(--paper);}
   .rp-meta{font-size:.7rem;color:var(--sepia);margin-bottom:.2rem;}
   .rp-tag{color:#7a5c3a;}
+  /* 添削の吹き出し */
+  #rdScroll mark.noted::after{content:'💬';font-size:.6em;margin-left:.1em;}
+  #rdBubble{position:fixed;z-index:460;width:260px;background:#fff;border:1px solid var(--sepia-light);border-radius:14px;padding:.7rem .8rem;box-shadow:0 6px 20px rgba(0,0,0,.2);font-family:'Noto Serif JP',serif;font-size:.8rem;color:var(--ink);}
+  #rdBubble[hidden]{display:none;}
+  #rdBubble .rb-q{color:var(--sepia);font-size:.72rem;max-height:4.5em;overflow:hidden;margin-bottom:.4rem;white-space:pre-wrap;}
+  #rdBubble .rb-note{line-height:1.7;white-space:pre-wrap;margin-bottom:.5rem;}
+  #rdBubble .rb-acts{display:flex;gap:.4rem;justify-content:flex-end;}
+  #rdBubble .rb-acts button{padding:.2rem .6rem;border:1px solid var(--sepia-light);border-radius:6px;background:#fff;cursor:pointer;font-family:inherit;font-size:.72rem;}
+  #rmkDlg .rmk-presets{display:flex;flex-wrap:wrap;gap:.3rem;margin:.4rem 0;}
+  #rmkDlg .rmk-presets button{padding:.15rem .5rem;border:1px solid var(--aged);border-radius:10px;background:#fff;cursor:pointer;font-family:inherit;font-size:.72rem;}
+  /* まとめノート（章ごとの一覧ページ） */
+  #sumView{position:fixed;inset:0;z-index:410;background:var(--paper);display:none;flex-direction:column;}
+  #sumGrid{flex:1;min-height:0;overflow-y:auto;padding:1rem 1.2rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:.9rem;align-content:start;}
+  .sum-card{background:#fff;border:1px solid var(--aged);border-radius:10px;padding:.8rem .9rem;box-shadow:2px 2px 6px var(--shadow);}
+  .sum-card h3{margin:0 0 .3rem;font-family:'Shippori Mincho',serif;font-size:1.05rem;color:var(--sepia-dark);cursor:pointer;}
+  .sum-stat{font-size:.72rem;color:var(--sepia);margin-bottom:.3rem;}
+  .sum-tags{margin-bottom:.3rem;line-height:1.9;}
+  .sum-card .rp-sum{min-height:4.5rem;}
+  .sum-ex{font-size:.78rem;line-height:1.6;margin:.3rem 0;padding-left:.5rem;border-left:3px solid var(--c,#ccc);}
   #rmkDlg{border:none;border-radius:12px;padding:1.1rem 1.2rem;width:min(480px,92vw);background:var(--paper);color:var(--ink);font-family:'Noto Serif JP',serif;box-shadow:0 12px 40px rgba(0,0,0,.3);}
   #rmkDlg::backdrop{background:rgba(26,18,9,.4);}
   #rmkDlg label{display:block;font-size:.8rem;color:var(--sepia-dark);margin:.5rem 0;}
@@ -329,6 +348,7 @@
     <button class="icon-btn" onclick="rdFs(-1)">A−</button><button class="icon-btn" onclick="rdFs(1)">A＋</button>
     <span style="flex:1"></span>
     <span id="rdProg">0%</span>
+    <button class="icon-btn" onclick="sumOpen()">📚 まとめノート</button>
     <button class="icon-btn" onclick="rdTogglePanel()">📝 メモ・まとめ</button>
     <button class="icon-btn" onclick="closeReader()">✕ 閉じる</button>
   </div>
@@ -346,12 +366,29 @@
     <button id="rdTipNote">✎ メモ</button>
     <button id="rdTipReg">＋ 登録</button>
   </div>
+  <div id="sumView">
+    <div class="rv-top"><strong id="sumTitle">まとめノート</strong><span style="flex:1"></span><span id="sumStat"></span><button class="icon-btn" onclick="rmkExportMd()">Markdownで書き出し</button><button class="icon-btn" onclick="sumClose()">✕ 閉じる</button></div>
+    <div id="sumGrid"></div>
+  </div>
+  <div id="rdBubble" hidden>
+    <div class="rb-q"></div>
+    <div class="rb-note"></div>
+    <div class="rb-acts"><button id="rbEdit">編集</button><button id="rbClose">閉じる</button></div>
+  </div>
   <dialog id="rmkDlg">
     <h3 style="font-family:'Shippori Mincho',serif;color:var(--sepia-dark);margin:0 0 .6rem">線引き・メモ</h3>
     <blockquote id="rmkQuote" style="margin:0 0 .8rem;padding:.5rem .7rem;border-left:4px solid var(--sepia-light);background:#faf7f0;white-space:pre-wrap;max-height:140px;overflow:auto;font-size:.85rem;line-height:1.7"></blockquote>
     <label>色 <select id="rmkColor"><option value="y">黄</option><option value="g">緑</option><option value="b">青</option><option value="p">桃</option></select></label>
     <label>スタイル <select id="rmkStyle"><option value="hl">蛍光ペン</option><option value="ul">線引き</option></select></label>
     <label>タグ（カンマ区切り）<input id="rmkTags" list="rmkTagList" placeholder="例：比喩, 倒置, 心理描写"><datalist id="rmkTagList"></datalist></label>
+    <div class="rmk-presets">
+      <button type="button" data-p="会話が良い">会話が良い</button>
+      <button type="button" data-p="これって変じゃない？">これって変じゃない？</button>
+      <button type="button" data-p="説明しすぎかも">説明しすぎかも</button>
+      <button type="button" data-p="リズムが良い">リズムが良い</button>
+      <button type="button" data-p="ここは削れそう">ここは削れそう</button>
+      <button type="button" data-p="比喩が効いている">比喩が効いている</button>
+    </div>
     <label>メモ <textarea id="rmkNote" rows="6" placeholder="気になった理由、使いどころ、感想など"></textarea></label>
     <div class="rmk-row"><button id="rmkDel" type="button">削除</button><span style="flex:1"></span><button id="rmkCancel" type="button">キャンセル</button><button id="rmkOk" type="button">保存</button></div>
   </dialog>
@@ -1019,7 +1056,7 @@ document.getElementById('rdTipReg').addEventListener('click', () => {
 });
 rdScroll.addEventListener('click', e => {
   const pm = e.target.closest('mark[data-mid]');
-  if (pm && getSelection().isCollapsed){ rmkOpen(pm.dataset.mid); return; }
+  if (pm && getSelection().isCollapsed){ rdShowBubble(pm.dataset.mid); return; }
   const m = e.target.closest('mark[data-pid]');
   if (!m || !getSelection().isCollapsed) return;
   editPhrase(m.dataset.pid);
@@ -1297,6 +1334,92 @@ function rmkExportMd(){
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1500);
 }
+
+// 添削の吹き出し：印をタップすると、そのコメントを吹き出しで表示する
+let rbId = null;
+function rdShowBubble(id){
+  const m = rmkMarks().find(x => x.id === id);
+  if (!m) return;
+  rbId = id;
+  const bub = document.getElementById('rdBubble');
+  bub.querySelector('.rb-q').textContent = m.text;
+  bub.querySelector('.rb-note').textContent = m.note || '（コメントはまだありません）';
+  bub.hidden = false;
+  const el = document.querySelector(`#rdText mark[data-mid="${id}"]`);
+  const r = el ? el.getBoundingClientRect() : {left: 200, right: 200, top: 200};
+  bub.style.left = Math.min(window.innerWidth - 280, Math.max(8, r.right + 10)) + 'px';
+  bub.style.top = Math.max(8, Math.min(window.innerHeight - 200, r.top)) + 'px';
+}
+document.getElementById('rbClose').onclick = () => { document.getElementById('rdBubble').hidden = true; };
+document.getElementById('rbEdit').onclick = () => {
+  document.getElementById('rdBubble').hidden = true;
+  if (rbId) rmkOpen(rbId);
+};
+rdScroll.addEventListener('pointerdown', () => { document.getElementById('rdBubble').hidden = true; });
+// 登録ダイアログの定番コメント：押すと、メモ欄に追記される
+document.querySelectorAll('#rmkDlg .rmk-presets button').forEach(b => b.addEventListener('click', () => {
+  const n = document.getElementById('rmkNote');
+  n.value = n.value ? n.value + '\n' + b.dataset.p : b.dataset.p;
+  n.focus();
+}));
+
+// ── まとめノート：章ごとに、内容・線引き・タグ・まとめを一覧で見るページ ──
+function sumOpen(){
+  document.getElementById('sumView').style.display = 'flex';
+  rmkRenderSummary();
+}
+function sumClose(){ document.getElementById('sumView').style.display = 'none'; }
+function sumGoto(pi){
+  sumClose();
+  const el = document.querySelector(`#rdText > p[data-pi="${pi}"]`);
+  if (el) el.scrollIntoView({behavior: 'smooth', block: 'start', inline: 'nearest'});
+}
+function rmkRenderSummary(){
+  const grid = document.getElementById('sumGrid');
+  if (!RD.paras.length){
+    document.getElementById('sumTitle').textContent = 'まとめノート';
+    document.getElementById('sumStat').textContent = '';
+    grid.innerHTML = '<p class="rp-empty">本文を開くと、章ごとのまとめがここに並びます。</p>';
+    return;
+  }
+  const bk = RMK[RD.title] || {marks: [], summaries: {}};
+  const sums = bk.summaries || {};
+  const marks = bk.marks.slice().sort((a, b) => a.pi - b.pi || a.s - b.s);
+  const chapters = rmkChapters();
+  const markedCh = chapters.filter(c => marks.some(m => (m.chPi ?? rdChapterPi(m.pi)) === c.pi)).length;
+  const sumCh = chapters.filter(c => sums[c.pi]).length;
+  document.getElementById('sumTitle').textContent = `${RD.title}：まとめノート`;
+  document.getElementById('sumStat').textContent = `${chapters.length}章中、線引きのある章 ${markedCh}・まとめのある章 ${sumCh}`;
+  grid.innerHTML = chapters.map(c => {
+    const ms = marks.filter(m => (m.chPi ?? rdChapterPi(m.pi)) === c.pi);
+    const sum = sums[c.pi] || '';
+    if (c.pi === -1 && !ms.length && !sum) return '';
+    const cnt = {};
+    ms.forEach(m => { cnt[m.color] = (cnt[m.color] || 0) + 1; });
+    const stat = ['y', 'b'].map(k => `${PEN_NAME[k]}（${rdEsc(RLEG[k])}）${cnt[k] || 0}`).join('　');
+    const tags = [...new Set(ms.flatMap(m => m.tags || []))];
+    const ex = ms.slice(0, 3).map(m => {
+      const t = m.text.length > 60 ? m.text.slice(0, 60) + '…' : m.text;
+      return `<div class="sum-ex" style="--c:${PEN_DARK[m.color] || '#999'}">${rdEsc(t)}</div>`;
+    }).join('');
+    return `<section class="sum-card">
+      <h3 data-goto="${c.pi}">${rdEsc(c.name)}</h3>
+      <div class="sum-stat">${stat}　計${ms.length}件</div>
+      ${tags.length ? `<div class="sum-tags">${tags.map(t => `<span class="rp-tag">#${rdEsc(t)}</span>`).join(' ')}</div>` : ''}
+      <textarea class="rp-sum" data-cpi="${c.pi}" placeholder="この章の内容を一言・数行で">${rdEsc(sum)}</textarea>
+      ${ex}
+    </section>`;
+  }).join('') || '<p class="rp-empty">まだ章がありません。</p>';
+}
+document.getElementById('sumGrid').addEventListener('click', e => {
+  const h = e.target.closest('[data-goto]');
+  if (h) sumGoto(+h.dataset.goto);
+});
+document.getElementById('sumGrid').addEventListener('change', e => {
+  if (!e.target.matches('textarea.rp-sum')) return;
+  rmkBook().summaries[e.target.dataset.cpi] = e.target.value;
+  rmkSave();
+});
 
 function rdJump(sel){
   if (!sel.value) return;
